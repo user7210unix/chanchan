@@ -2,16 +2,7 @@
 
 A minimal, dark-navy 4chan catalog browser. Single static HTML file — no build step, no dependencies, no server.
 
-## Deploy to GitHub Pages
-
-1. Create a new GitHub repository (public)
-2. Upload `index.html` to the root
-3. Go to **Settings → Pages → Source → Deploy from branch → main / (root)**
-4. Your viewer will be live at `https://yourusername.github.io/repo-name`
-
-> The site **must** be served over HTTPS (GitHub Pages does this automatically) for the CORS proxies to work.
-
-## Features
+ Features
 
 - **Catalog-only view** — responsive grid with thumbnails, reply/image counts
 - **Auto-hiding sidebar** — hover to reveal full board list with SFW/NSFW sections
@@ -32,13 +23,3 @@ A minimal, dark-navy 4chan catalog browser. Single static HTML file — no build
 2. `corsproxy.io`
 3. `api.codetabs.com`
 4. `thingproxy.freeboard.io`
-
-Images are loaded directly from `i.4cdn.org` (no proxy needed — 4chan allows cross-origin image loads).
-
-## Files
-
-```
-index.html   ← the entire app, self-contained
-.nojekyll    ← tells GitHub Pages not to process with Jekyll
-README.md    ← this file
-```
