@@ -1,0 +1,2222 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>chan reader</title>
+
+  <!-- Font Awesome 6 — icons throughout the UI -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" />
+
+  <!-- Maple Mono — exact filenames present in assets/fonts/ -->
+  <style>
+    @font-face {
+      font-family: "MapleMono";
+      src: url("assets/fonts/MapleMono-Light.ttf.woff2") format("woff2");
+      font-weight: 300;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "MapleMono";
+      src: url("assets/fonts/MapleMono-Regular.ttf.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "MapleMono";
+      src: url("assets/fonts/MapleMono-Medium.ttf.woff2") format("woff2");
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "MapleMono";
+      src: url("assets/fonts/MapleMono-SemiBold.ttf.woff2") format("woff2");
+      font-weight: 600;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "MapleMono";
+      src: url("assets/fonts/MapleMono-Bold.ttf.woff2") format("woff2");
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+  </style>
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       DESIGN TOKENS
+       Two palettes: "paper" (light) feels like aged newsprint,
+       "ink" (dark) feels like a letterpress proof on black stock.
+    ═══════════════════════════════════════════════════════════ */
+
+    :root {
+      --sidebar-width : 210px;
+      --content-max   : 860px;
+      --radius-sm     : 4px;
+      --radius-md     : 8px;
+      --radius-lg     : 14px;
+      --transition    : 0.14s ease;
+
+      /* Typographic scale */
+      --font-xs  : 10px;
+      --font-sm  : 11.5px;
+      --font-base: 13px;
+      --font-md  : 14.5px;
+      --font-lg  : 18px;
+      --font-xl  : 26px;
+    }
+
+    /* Dark theme — deep forest ink */
+    [data-theme="dark"] {
+      --bg          : #111009;
+      --bg-raised   : #181610;
+      --bg-card     : #1e1c14;
+      --bg-hover    : #242018;
+      --bg-subtle   : #0e0d08;
+      --divider     : #2c2820;
+      --divider-soft: rgba(255, 255, 255, 0.05);
+      --ink-strong  : #ede8de;
+      --ink-body    : #b8b0a0;
+      --ink-muted   : #7a7060;
+      --ink-ghost   : #3e3830;
+      --accent      : #d4aa6a;   /* warm amber gold */
+      --accent-hover: #b88c48;
+      --accent-tint : rgba(212, 170, 106, 0.10);
+      --green-text  : #82b06e;   /* greentext lines */
+      --op-stripe   : #d4aa6a;   /* left border on OP post */
+      --scrollbar   : #2c2820;
+    }
+
+    /* Light theme — aged letter paper */
+    [data-theme="light"] {
+      --bg          : #f2ede3;
+      --bg-raised   : #faf7f0;
+      --bg-card     : #ffffff;
+      --bg-hover    : #f0ebe0;
+      --bg-subtle   : #e8e2d6;
+      --divider     : #ddd6c8;
+      --divider-soft: rgba(0, 0, 0, 0.06);
+      --ink-strong  : #1a1812;
+      --ink-body    : #3c3830;
+      --ink-muted   : #8a8070;
+      --ink-ghost   : #c4bdb0;
+      --accent      : #8c6830;
+      --accent-hover: #6e5020;
+      --accent-tint : rgba(140, 104, 48, 0.08);
+      --green-text  : #4a7a3a;
+      --op-stripe   : #8c6830;
+      --scrollbar   : #ddd6c8;
+    }
+
+    /* ═══════════════════════════════════════════
+       GLOBAL RESET & BASE
+    ═══════════════════════════════════════════ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 20px;
+      /* Smooth scrolling for quote-link jumps */
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: "MapleMono", "Courier New", monospace;
+      background: var(--bg);
+      color: var(--ink-body);
+      height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Thin, unobtrusive scrollbars */
+    ::-webkit-scrollbar       { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: var(--scrollbar);
+      border-radius: 99px;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: var(--ink-ghost); }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+
+    button {
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* ═══════════════════════════════════════════
+       LAYOUT SHELL — sidebar + main side by side
+    ═══════════════════════════════════════════ */
+    #app {
+      display: flex;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ═══════════════════════════════════════════
+       SIDEBAR
+    ═══════════════════════════════════════════ */
+    #sidebar {
+      width: var(--sidebar-width);
+      min-width: var(--sidebar-width);
+      background: var(--bg-raised);
+      border-right: 1px solid var(--divider);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Logo row */
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 13px 11px;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .logo-text {
+      flex: 1;
+      font-size: var(--font-md);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: var(--ink-strong);
+      line-height: 1;
+    }
+
+    .logo-text .logo-dot {
+      color: var(--accent);
+    }
+
+    /* Small square icon buttons used in the header row */
+    .icon-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: none;
+      border: 1px solid var(--divider);
+      border-radius: var(--radius-sm);
+      color: var(--ink-muted);
+      font-size: 12px;
+      transition: border-color var(--transition),
+                  color var(--transition),
+                  background var(--transition);
+    }
+
+    .icon-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-tint);
+    }
+
+    /* Board search box */
+    .sidebar-search {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .sidebar-search input {
+      width: 100%;
+      background: var(--bg-subtle);
+      border: 1px solid var(--divider);
+      border-radius: var(--radius-sm);
+      padding: 5px 9px;
+      font: inherit;
+      font-size: var(--font-sm);
+      color: var(--ink-strong);
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .sidebar-search input::placeholder { color: var(--ink-muted); }
+    .sidebar-search input:focus        { border-color: var(--accent); }
+
+    /* Tiny uppercase section label inside the sidebar */
+    .sidebar-section-label {
+      padding: 9px 13px 4px;
+      font-size: var(--font-xs);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-ghost);
+    }
+
+    /* Scrollable board list */
+    #board-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 3px 6px 16px;
+    }
+
+    /* Individual board row */
+    .board-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 8px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: var(--font-sm);
+      color: var(--ink-muted);
+      transition: background var(--transition), color var(--transition);
+      line-height: 1;
+    }
+
+    .board-row:hover  { background: var(--bg-hover); color: var(--ink-body); }
+    .board-row.active { background: var(--accent-tint); color: var(--accent); }
+
+    .board-row .board-tag {
+      font-weight: 600;
+      font-size: 11px;
+      min-width: 32px;
+    }
+
+    .board-row .board-name {
+      font-size: 10.5px;
+      opacity: 0.65;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ═══════════════════════════════════════════
+       MAIN PANEL
+    ═══════════════════════════════════════════ */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* ─── TOP BAR ────────────────────────────── */
+    #topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 18px;
+      border-bottom: 1px solid var(--divider);
+      background: var(--bg-raised);
+      flex-shrink: 0;
+      min-height: 42px;
+    }
+
+    /* Breadcrumb navigation */
+    #breadcrumb {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: var(--font-sm);
+      color: var(--ink-muted);
+    }
+
+    .bc-link {
+      cursor: pointer;
+      transition: color var(--transition);
+    }
+    .bc-link:hover { color: var(--accent); }
+
+    .bc-current { color: var(--ink-strong); font-weight: 500; }
+    .bc-sep     { color: var(--ink-ghost); }
+
+    /* Right-side action buttons in topbar */
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Grid / List toggle pill */
+    .view-toggle {
+      display: flex;
+      border: 1px solid var(--divider);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: var(--bg-subtle);
+    }
+
+    .view-toggle-btn {
+      display: flex;
+      align-items: center;
+      padding: 5px 9px;
+      border: none;
+      background: transparent;
+      color: var(--ink-muted);
+      font-size: 12px;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .view-toggle-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .view-toggle-btn:not(.active):hover {
+      background: var(--bg-hover);
+      color: var(--ink-body);
+    }
+
+    /* ─── SCROLLABLE CONTENT AREA ────────────── */
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 20px 22px;
+    }
+
+    /* ─── STATUS BAR ─────────────────────────── */
+    #statusbar {
+      padding: 4px 18px;
+      background: var(--bg-raised);
+      border-top: 1px solid var(--divider);
+      font-size: var(--font-xs);
+      color: var(--ink-ghost);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--green-text);
+      flex-shrink: 0;
+    }
+
+    .status-dot.error { background: #c26858; }
+
+    /* ═══════════════════════════════════════════
+       LOADING & EMPTY STATE HELPERS
+    ═══════════════════════════════════════════ */
+    .state-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 14px;
+      color: var(--ink-muted);
+      text-align: center;
+      padding: 40px;
+    }
+
+    .state-block .state-icon {
+      font-size: 28px;
+      opacity: 0.3;
+    }
+
+    .state-block .state-message {
+      font-size: var(--font-sm);
+      line-height: 1.65;
+      max-width: 280px;
+    }
+
+    /* Spinning loader ring */
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--divider);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin-anim 0.65s linear infinite;
+    }
+
+    @keyframes spin-anim {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ═══════════════════════════════════════════
+       WELCOME SCREEN
+    ═══════════════════════════════════════════ */
+    #welcome-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 16px;
+      text-align: center;
+      padding: 60px 40px;
+    }
+
+    .welcome-logo {
+      font-size: 44px;
+      font-weight: 700;
+      color: var(--ink-strong);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .welcome-logo .welcome-accent { color: var(--accent); }
+
+    .welcome-tagline {
+      font-size: var(--font-sm);
+      color: var(--ink-muted);
+      line-height: 1.7;
+      max-width: 300px;
+    }
+
+    .welcome-hint {
+      font-size: 11px;
+      color: var(--ink-ghost);
+      border: 1px dashed var(--divider);
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ═══════════════════════════════════════════
+       CATALOG — shared header bar
+    ═══════════════════════════════════════════ */
+    .catalog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .catalog-title {
+      font-size: var(--font-md);
+      font-weight: 600;
+      color: var(--ink-strong);
+      line-height: 1;
+    }
+
+    .catalog-title .board-accent { color: var(--accent); }
+
+    .catalog-count {
+      font-size: var(--font-sm);
+      font-weight: 400;
+      color: var(--ink-muted);
+      margin-left: 8px;
+    }
+
+    /* Live filter input inside catalog */
+    .catalog-filter-input {
+      background: var(--bg-subtle);
+      border: 1px solid var(--divider);
+      border-radius: var(--radius-sm);
+      padding: 5px 10px;
+      font: inherit;
+      font-size: var(--font-sm);
+      color: var(--ink-strong);
+      outline: none;
+      width: 200px;
+      transition: border-color var(--transition);
+    }
+
+    .catalog-filter-input::placeholder { color: var(--ink-muted); }
+    .catalog-filter-input:focus        { border-color: var(--accent); }
+
+    /* ═══════════════════════════════════════════
+       CATALOG GRID — magazine-style tile layout
+    ═══════════════════════════════════════════ */
+    #catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(162px, 1fr));
+      gap: 10px;
+    }
+
+    /* Each thread as a card */
+    .thread-card {
+      background: var(--bg-card);
+      border: 1px solid var(--divider);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      position: relative;
+    }
+
+    .thread-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    }
+
+    /* Image region — always fixed aspect ratio so grid stays even */
+    .card-image-wrap {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: var(--bg-subtle);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-image-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Placeholder when there is no image */
+    .card-no-image {
+      font-size: 24px;
+      color: var(--ink-ghost);
+    }
+
+    /* Pinned thread indicator */
+    .card-pinned-badge {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    /* Text content below image */
+    .card-body {
+      padding: 9px 10px 11px;
+    }
+
+    /* Thread subject line — truncated to one line */
+    .card-subject {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--ink-strong);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    /* Comment preview — limited to 3 lines */
+    .card-comment {
+      font-size: 10.5px;
+      color: var(--ink-muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Stat row: replies + images */
+    .card-stats {
+      display: flex;
+      gap: 10px;
+      margin-top: 7px;
+      font-size: var(--font-xs);
+      color: var(--ink-muted);
+    }
+
+    .card-stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ═══════════════════════════════════════════
+       CATALOG LIST — compact row layout
+    ═══════════════════════════════════════════ */
+    #catalog-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .list-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--divider);
+      border-radius: var(--radius-sm);
+      padding: 10px 13px;
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition);
+    }
+
+    .list-row:hover {
+      border-color: var(--accent);
+      background: var(--bg-hover);
+    }
+
+    /* Thumbnail for list view */
+    .list-thumb {
+      width: 58px;
+      height: 58px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+      flex-shrink: 0;
+      background: var(--bg-subtle);
+      display: block;
+    }
+
+    .list-no-thumb {
+      width: 58px;
+      height: 58px;
+      background: var(--bg-subtle);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--ink-ghost);
+      flex-shrink: 0;
+    }
+
+    .list-body { flex: 1; min-width: 0; }
+
+    .list-subject {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-strong);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-bottom: 3px;
+    }
+
+    .list-comment {
+      font-size: 11px;
+      color: var(--ink-muted);
+      line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .list-meta {
+      display: flex;
+      gap: 12px;
+      margin-top: 5px;
+      font-size: var(--font-xs);
+      color: var(--ink-muted);
+    }
+
+    .list-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ═══════════════════════════════════════════
+       THREAD VIEW
+       Editorial style: OP post is wide + prominent,
+       replies stack in a focused column.
+    ═══════════════════════════════════════════ */
+    #thread-container {
+      max-width: var(--content-max);
+      margin: 0 auto;
+    }
+
+    /* ─── OP POST ─────────────────────────────── */
+    .post-op {
+      background: var(--bg-card);
+      border: 1px solid var(--divider);
+      border-left: 3px solid var(--op-stripe);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-bottom: 18px;
+    }
+
+    /* ─── REPLY POST ──────────────────────────── */
+    .post-reply {
+      background: var(--bg-card);
+      border: 1px solid var(--divider);
+      border-radius: var(--radius-sm);
+      padding: 11px 14px;
+      margin-bottom: 4px;
+    }
+
+    .post-reply:last-child { margin-bottom: 0; }
+
+    /* Posts light up on hover so you can track your eye */
+    .post-reply:hover { background: var(--bg-hover); }
+
+    /* ─── POST HEADER ─────────────────────────── */
+    /* Name (accent), tripcode, and post number at the far right */
+    .post-header {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .poster-name {
+      font-size: var(--font-sm);
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .poster-trip {
+      font-size: var(--font-sm);
+      color: var(--ink-muted);
+    }
+
+    /* No. pushed to the right with margin-left: auto */
+    .post-number {
+      margin-left: auto;
+      font-size: var(--font-xs);
+      color: var(--ink-ghost);
+    }
+
+    .post-number a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .post-number a:hover { color: var(--accent); }
+
+    /* Subject line — only rendered when present */
+    .post-subject {
+      font-size: var(--font-md);
+      font-weight: 700;
+      color: var(--ink-strong);
+      margin-bottom: 10px;
+      line-height: 1.3;
+    }
+
+    /* ─── POST IMAGE ──────────────────────────── */
+    /* Shown as a compact thumbnail; click expands to lightbox */
+    .post-image-wrap {
+      margin-bottom: 11px;
+    }
+
+    .post-thumbnail {
+      max-height: 200px;
+      width: auto;
+      display: block;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--divider);
+      cursor: zoom-in;
+      transition: opacity var(--transition);
+    }
+
+    .post-thumbnail:hover { opacity: 0.82; }
+
+    /* ─── POST BODY TEXT ──────────────────────── */
+    .post-body {
+      font-size: var(--font-base);
+      line-height: 1.7;
+      color: var(--ink-body);
+      word-break: break-word;
+    }
+
+    /* Greentext lines */
+    .line-green {
+      color: var(--green-text);
+      font-style: italic;
+    }
+
+    /* >>quote links that jump to a post */
+    .quote-link {
+      color: var(--accent);
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .quote-link:hover { text-decoration: underline; }
+
+    /* Spoiler text — hidden until clicked */
+    .spoiler-text {
+      background: var(--ink-strong);
+      color: var(--ink-strong);
+      border-radius: 2px;
+      padding: 0 2px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .spoiler-text.revealed { color: var(--bg); }
+
+    /* ─── REPLY COUNT DIVIDER ─────────────────── */
+    .replies-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 16px 0 10px;
+      font-size: var(--font-sm);
+      color: var(--ink-muted);
+    }
+
+    .replies-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--divider);
+    }
+
+    /* Reply reference in a post (<<No.XXXXX with a comment icon) */
+    .reply-ref {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: var(--font-xs);
+      color: var(--accent);
+      cursor: pointer;
+      padding: 1px 5px 1px 4px;
+      border-radius: 3px;
+      background: var(--accent-tint);
+      margin-right: 3px;
+      text-decoration: none;
+      transition: background var(--transition);
+    }
+
+    .reply-ref:hover {
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+    }
+
+    /* ═══════════════════════════════════════════
+       LIGHTBOX — full-image overlay
+    ═══════════════════════════════════════════ */
+    #lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 7, 4, 0.92);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+    }
+
+    /* Show it via jQuery by adding .open class */
+    #lightbox.open { display: flex; }
+
+    #lightbox img {
+      max-width: 92vw;
+      max-height: 92vh;
+      object-fit: contain;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    }
+
+    /* Close button in the corner */
+    #lightbox-close {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      background: rgba(255,255,255,0.08);
+      border: none;
+      color: rgba(255,255,255,0.7);
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #lightbox-close:hover {
+      background: rgba(255,255,255,0.18);
+      color: #fff;
+    }
+
+    /* ═══════════════════════════════════════════
+       HOVER IMAGE PREVIEW
+       Follows the cursor when hovering thumbnails
+    ═══════════════════════════════════════════ */
+    #hover-preview {
+      display: none;
+      position: fixed;
+      pointer-events: none;
+      z-index: 900;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--divider);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+      background: var(--bg-card);
+      max-width: 300px;
+      max-height: 300px;
+    }
+
+    #hover-preview img {
+      display: block;
+      max-width: 300px;
+      max-height: 300px;
+      object-fit: contain;
+    }
+
+    /* ═══════════════════════════════════════════
+       PROXY CONFIG MODAL
+    ═══════════════════════════════════════════ */
+    #proxy-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 7, 4, 0.65);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #proxy-modal.open { display: flex; }
+
+    .modal-box {
+      background: var(--bg-raised);
+      border: 1px solid var(--divider);
+      border-radius: var(--radius-lg);
+      padding: 22px 24px;
+      width: 390px;
+      max-width: 93vw;
+    }
+
+    .modal-title {
+      font-size: var(--font-md);
+      font-weight: 600;
+      color: var(--ink-strong);
+      margin-bottom: 5px;
+    }
+
+    .modal-description {
+      font-size: var(--font-sm);
+      color: var(--ink-muted);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .modal-label {
+      display: block;
+      font-size: 10.5px;
+      color: var(--ink-muted);
+      margin-bottom: 5px;
+    }
+
+    .modal-input {
+      width: 100%;
+      background: var(--bg-subtle);
+      border: 1px solid var(--divider);
+      border-radius: var(--radius-sm);
+      padding: 7px 10px;
+      font: inherit;
+      font-size: var(--font-sm);
+      color: var(--ink-strong);
+      outline: none;
+      margin-bottom: 11px;
+      transition: border-color var(--transition);
+    }
+
+    .modal-input:focus { border-color: var(--accent); }
+    .modal-input::placeholder { color: var(--ink-muted); }
+
+    /* Preset quick-select pills */
+    .preset-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 12px;
+    }
+
+    .preset-pill {
+      font-size: 10.5px;
+      padding: 3px 9px;
+      border: 1px solid var(--divider);
+      border-radius: 3px;
+      background: var(--bg-subtle);
+      color: var(--ink-muted);
+      transition: border-color var(--transition), color var(--transition);
+    }
+
+    .preset-pill:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .modal-note {
+      font-size: 10px;
+      color: var(--ink-ghost);
+      background: var(--bg-subtle);
+      border: 1px solid var(--divider);
+      border-radius: var(--radius-sm);
+      padding: 7px 10px;
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    .modal-note code { color: var(--ink-muted); }
+
+    .modal-footer {
+      display: flex;
+      gap: 7px;
+      justify-content: flex-end;
+    }
+
+    /* Reusable buttons */
+    .btn {
+      padding: 7px 15px;
+      border-radius: var(--radius-sm);
+      font: inherit;
+      font-size: var(--font-sm);
+      font-weight: 600;
+      border: 1px solid var(--divider);
+      background: var(--bg-subtle);
+      color: var(--ink-muted);
+      transition: all var(--transition);
+    }
+
+    .btn:hover {
+      color: var(--ink-body);
+      border-color: var(--ink-ghost);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #faf5eb;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #faf5eb;
+    }
+
+    /* ═══════════════════════════════════════════
+       RESPONSIVE — hide sidebar on small screens
+    ═══════════════════════════════════════════ */
+    @media (max-width: 580px) {
+      :root { --sidebar-width: 0px; }
+      #sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ═══ SIDEBAR ════════════════════════════════ -->
+  <aside id="sidebar">
+
+    <div class="sidebar-header">
+      <span class="logo-text">chan<span class="logo-dot">.</span>reader</span>
+      <button class="icon-btn" id="theme-btn" title="Toggle theme">
+        <i class="fa-solid fa-circle-half-stroke"></i>
+      </button>
+    </div>
+
+    <div class="sidebar-search">
+      <input type="text" id="board-search-input"
+             placeholder="filter boards…"
+             autocomplete="off"
+             spellcheck="false" />
+    </div>
+
+    <div class="sidebar-section-label">Worksafe</div>
+
+    <!-- Board rows injected here by JS -->
+    <div id="board-list">
+      <div class="state-block" style="height: 100px;">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ═══ MAIN PANEL ══════════════════════════════ -->
+  <div id="main">
+
+    <div id="topbar">
+      <div id="breadcrumb">
+        <span class="bc-current">home</span>
+      </div>
+
+      <div class="topbar-actions">
+        <!-- Refresh button — hidden until a board is open -->
+        <button class="icon-btn" id="refresh-btn" style="display:none" title="Refresh">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+
+        <!-- Grid/List toggle — hidden until a board is open -->
+        <div class="view-toggle" id="view-toggle" style="display:none">
+          <button class="view-toggle-btn active" data-view="grid" title="Grid view">
+            <i class="fa-solid fa-grip"></i>
+          </button>
+          <button class="view-toggle-btn" data-view="list" title="List view">
+            <i class="fa-solid fa-list"></i>
+          </button>
+        </div>
+
+        <!-- Proxy config button -->
+        <button class="icon-btn" id="proxy-btn" title="Proxy settings">
+          <i class="fa-solid fa-tower-broadcast"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main content changes based on state: welcome / catalog / thread -->
+    <div id="content">
+      <div id="welcome-screen">
+        <div class="welcome-logo">
+          chan<span class="welcome-accent">.</span>reader
+        </div>
+        <p class="welcome-tagline">
+          A focused, worksafe reader for 4chan.<br>
+          Just the content — nothing else.
+        </p>
+        <span class="welcome-hint">
+          <i class="fa-solid fa-arrow-left-long"></i>&nbsp; pick a board to start
+        </span>
+      </div>
+    </div>
+
+    <div id="statusbar">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">ready — select a board</span>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+
+<!-- ═══ LIGHTBOX ════════════════════════════════ -->
+<div id="lightbox">
+  <button id="lightbox-close"><i class="fa-solid fa-xmark"></i></button>
+  <img id="lightbox-img" src="" alt="full image" />
+</div>
+
+<!-- ═══ HOVER PREVIEW ═══════════════════════════ -->
+<div id="hover-preview">
+  <img id="hover-preview-img" src="" alt="preview" />
+</div>
+
+<!-- ═══ PROXY MODAL ════════════════════════════ -->
+<div id="proxy-modal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <i class="fa-solid fa-tower-broadcast"></i>&nbsp; Proxy settings
+    </div>
+    <p class="modal-description">
+      4chan blocks direct browser requests. A CORS proxy forwards them on your behalf.
+      The URL is prepended <em>as-is</em> to each API call — no extra encoding.
+    </p>
+
+    <label class="modal-label">Quick presets</label>
+    <div class="preset-row">
+      <button class="preset-pill" data-proxy="https://corsproxy.io/?url=">corsproxy.io</button>
+      <button class="preset-pill" data-proxy="https://api.allorigins.win/raw?url=">allorigins</button>
+      <button class="preset-pill" data-proxy="https://thingproxy.freeboard.io/fetch/">thingproxy</button>
+      <button class="preset-pill" data-proxy="">no proxy (direct)</button>
+    </div>
+
+    <label class="modal-label">Custom proxy URL</label>
+    <input type="text" class="modal-input" id="proxy-url-input"
+           spellcheck="false"
+           placeholder="https://corsproxy.io/?url=" />
+
+    <div class="modal-note">
+      Example result URL:<br>
+      <code>https://corsproxy.io/?url=https://a.4cdn.org/boards.json</code>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn" id="proxy-cancel-btn">cancel</button>
+      <button class="btn btn-primary" id="proxy-save-btn">
+        <i class="fa-solid fa-check"></i>&nbsp; save &amp; apply
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     LIBRARIES
+     jQuery  — DOM, events, AJAX
+     Lodash  — data utilities (flatMap, filter, etc.)
+═══════════════════════════════════════════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"
+        crossorigin="anonymous"></script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   chan.reader — main application
+   ─────────────────────────────────────────────────────────────
+   Structure
+     1.  CONFIG        — API URLs, timing constants
+     2.  STATE         — single source of truth object
+     3.  API LAYER     — fetch with proxy + rate-limit
+     4.  BOARDS        — load and render board list
+     5.  CATALOG       — load, render grid/list, filter
+     6.  THREAD        — load and render thread + posts
+     7.  POST HELPERS  — text processing, timestamps
+     8.  UI HELPERS    — lightbox, hover preview, breadcrumb
+     9.  EVENTS        — all jQuery event bindings
+    10.  INIT          — bootstrap
+═══════════════════════════════════════════════════════════════ */
+
+
+/* ─────────────────────────────────────────────
+   1. CONFIG
+───────────────────────────────────────────── */
+const API_BASE       = "https://a.4cdn.org";
+const IMAGE_BASE     = "https://i.4cdn.org";
+const THUMB_BASE     = "https://t.4cdn.org";
+
+// 4chan asks for at most 1 request per second; we add a 100ms buffer
+const MIN_REQUEST_GAP_MS = 1100;
+
+// Image extensions we display inline (others get a video player)
+const INLINE_IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
+
+
+/* ─────────────────────────────────────────────
+   2. STATE
+   One object so we never lose track of where we are
+───────────────────────────────────────────── */
+const state = {
+  proxy        : localStorage.getItem("chan_proxy")    ?? "https://corsproxy.io/?url=",
+  view         : localStorage.getItem("chan_view")     ?? "grid",
+  theme        : localStorage.getItem("chan_theme")    ?? "dark",
+  activeBoard  : null,   // e.g. "g", "v"
+  activeThread : null,   // numeric thread id string
+  catalogData  : [],     // full flat catalog array (Lodash helps us shape this)
+  allBoards    : [],     // full list from /boards.json
+  lastFetchTime: 0,      // timestamp of the last API call
+  currentPage  : "welcome",  // "welcome" | "catalog" | "thread"
+};
+
+
+/* ─────────────────────────────────────────────
+   3. API LAYER
+───────────────────────────────────────────── */
+
+/**
+ * Fetch a 4chan API endpoint, honouring the rate limit.
+ * Proxy is prepended directly — no encodeURIComponent, which
+ * would double-encode the query string and break every proxy.
+ *
+ * @param {string} path  e.g. "/boards.json"
+ * @returns {Promise<Object>} parsed JSON
+ */
+async function apiFetch(path) {
+  const elapsed = Date.now() - state.lastFetchTime;
+  if (elapsed < MIN_REQUEST_GAP_MS) {
+    await sleep(MIN_REQUEST_GAP_MS - elapsed);
+  }
+  state.lastFetchTime = Date.now();
+
+  const fullUrl    = API_BASE + path;
+  const requestUrl = state.proxy ? (state.proxy + fullUrl) : fullUrl;
+
+  try {
+    const response = await $.ajax({ url: requestUrl, dataType: "json" });
+    setStatus("ok", `last update: ${new Date().toLocaleTimeString()}`);
+    return response;
+  } catch (err) {
+    const reason = err.status ? `HTTP ${err.status}` : "network error";
+    setStatus("error", `fetch failed — ${reason}. check proxy settings.`);
+    throw err;
+  }
+}
+
+/** Simple delay helper */
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+
+/* ─────────────────────────────────────────────
+   4. BOARDS
+───────────────────────────────────────────── */
+
+/** Fetch /boards.json and render the sidebar list (worksafe only) */
+async function loadBoards() {
+  try {
+    const data = await apiFetch("/boards.json");
+
+    // Only keep boards with ws_board === 1 (worksafe flag from 4chan API)
+    state.allBoards = _.filter(data.boards, b => b.ws_board === 1);
+
+    renderBoardList(state.allBoards);
+  } catch {
+    $("#board-list").html(buildStateBlock("fa-triangle-exclamation", "could not load boards.<br>check proxy settings."));
+  }
+}
+
+/**
+ * Render a given array of board objects into the sidebar.
+ * Called both on initial load and when the search filter changes.
+ *
+ * @param {Array} boards  filtered subset of state.allBoards
+ */
+function renderBoardList(boards) {
+  if (boards.length === 0) {
+    $("#board-list").html(`<div style="padding:10px 8px;font-size:10.5px;color:var(--ink-muted)">no boards found</div>`);
+    return;
+  }
+
+  const rows = _.map(boards, board => `
+    <div class="board-row" data-board="${escapeHtml(board.board)}">
+      <span class="board-tag">/${board.board}/</span>
+      <span class="board-name">${escapeHtml(board.title)}</span>
+    </div>
+  `);
+
+  $("#board-list").html(rows.join(""));
+
+  // Mark the currently active board (if any) as active
+  if (state.activeBoard) {
+    $(`.board-row[data-board="${state.activeBoard}"]`).addClass("active");
+  }
+}
+
+
+/* ─────────────────────────────────────────────
+   5. CATALOG
+───────────────────────────────────────────── */
+
+/**
+ * Switch the active board and kick off a catalog load.
+ * @param {string} boardCode  e.g. "g"
+ */
+function selectBoard(boardCode) {
+  state.activeBoard  = boardCode;
+  state.activeThread = null;
+  state.currentPage  = "catalog";
+
+  // Highlight the selected board row in the sidebar
+  $(".board-row").removeClass("active");
+  $(`.board-row[data-board="${boardCode}"]`).addClass("active");
+
+  showRefreshButton();
+  showViewToggle();
+  updateBreadcrumb();
+  loadCatalog();
+}
+
+/** Fetch and display the catalog for the active board */
+async function loadCatalog() {
+  showLoadingSpinner();
+
+  try {
+    const pages = await apiFetch(`/${state.activeBoard}/catalog.json`);
+
+    // The catalog is an array of "pages", each with a threads array.
+    // Lodash flatMap collapses all pages into one flat thread array.
+    state.catalogData = _.flatMap(pages, page => page.threads);
+
+    renderCatalog(state.catalogData);
+  } catch {
+    showContent(buildErrorBlock("failed to load catalog — check proxy settings"));
+  }
+}
+
+/**
+ * Render all threads as either a grid or a list.
+ * Also sets up the live filter input.
+ *
+ * @param {Array} threads  array of thread objects from the API
+ */
+function renderCatalog(threads) {
+  const board = state.activeBoard;
+  const count = threads.length;
+
+  const headerHtml = `
+    <div class="catalog-header">
+      <div class="catalog-title">
+        /<span class="board-accent">${board}</span>/
+        <span class="catalog-count">${count} threads</span>
+      </div>
+      <input
+        class="catalog-filter-input"
+        id="catalog-filter"
+        placeholder="filter threads…"
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </div>
+  `;
+
+  const itemsHtml = state.view === "grid"
+    ? `<div id="catalog-grid">${threads.map(buildThreadCard).join("")}</div>`
+    : `<div id="catalog-list">${threads.map(buildListRow).join("")}</div>`;
+
+  showContent(headerHtml + itemsHtml);
+
+  // Start lazy-loading images now that the DOM is ready
+  activateLazyImages();
+
+  // Hover preview on thumbnail regions
+  activateHoverPreviews("[data-preview-url]");
+
+  // Attach click handlers to open threads
+  $("[data-thread-id]").on("click", function () {
+    openThread($(this).data("thread-id"));
+  });
+
+  // Live filter — uses Lodash to filter without re-fetching
+  $("#catalog-filter").on("input", function () {
+    const query = $(this).val().toLowerCase().trim();
+    const filtered = query
+      ? _.filter(state.catalogData, thread =>
+          stripHtml(thread.sub  || "").toLowerCase().includes(query) ||
+          stripHtml(thread.com  || "").toLowerCase().includes(query)
+        )
+      : state.catalogData;
+
+    const freshItems = state.view === "grid"
+      ? filtered.map(buildThreadCard).join("")
+      : filtered.map(buildListRow).join("");
+
+    $("#catalog-grid, #catalog-list").html(freshItems);
+    activateLazyImages();
+    activateHoverPreviews("[data-preview-url]");
+    $("[data-thread-id]").on("click", function () {
+      openThread($(this).data("thread-id"));
+    });
+  });
+
+  // Auto-focus the filter so you can type immediately
+  $("#catalog-filter").trigger("focus");
+}
+
+/**
+ * Build the HTML string for one thread card (grid view).
+ * @param {Object} thread
+ * @returns {string}
+ */
+function buildThreadCard(thread) {
+  const thumbUrl  = thread.tim ? `${THUMB_BASE}/${state.activeBoard}/${thread.tim}s.jpg` : null;
+  const subject   = stripHtml(thread.sub || "");
+  const comment   = stripHtml(thread.com || "");
+  const isPinned  = thread.sticky === 1;
+
+  const pinnedBadge = isPinned ? `<span class="card-pinned-badge">pinned</span>` : "";
+
+  const imageRegion = thumbUrl
+    ? `<div class="card-image-wrap" data-preview-url="${thumbUrl}">
+         <img data-lazy-src="${thumbUrl}" alt="" />
+       </div>`
+    : `<div class="card-image-wrap">
+         <span class="card-no-image"><i class="fa-regular fa-file-lines"></i></span>
+       </div>`;
+
+  return `
+    <div class="thread-card" data-thread-id="${thread.no}">
+      ${imageRegion}
+      ${pinnedBadge}
+      <div class="card-body">
+        <div class="card-subject">
+          ${escapeHtml(subject || comment.slice(0, 46) || "(no subject)")}
+        </div>
+        <div class="card-comment">${escapeHtml(comment)}</div>
+        <div class="card-stats">
+          <span class="card-stat">
+            <i class="fa-regular fa-comment"></i>
+            ${thread.replies ?? 0}
+          </span>
+          <span class="card-stat">
+            <i class="fa-regular fa-image"></i>
+            ${thread.images ?? 0}
+          </span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Build the HTML string for one thread row (list view).
+ * @param {Object} thread
+ * @returns {string}
+ */
+function buildListRow(thread) {
+  const thumbUrl = thread.tim ? `${THUMB_BASE}/${state.activeBoard}/${thread.tim}s.jpg` : null;
+  const subject  = stripHtml(thread.sub || "");
+  const comment  = stripHtml(thread.com || "");
+
+  const thumbRegion = thumbUrl
+    ? `<img class="list-thumb" data-lazy-src="${thumbUrl}" data-preview-url="${thumbUrl}" alt="" />`
+    : `<div class="list-no-thumb"><i class="fa-regular fa-file-lines"></i></div>`;
+
+  return `
+    <div class="list-row" data-thread-id="${thread.no}">
+      ${thumbRegion}
+      <div class="list-body">
+        <div class="list-subject">${escapeHtml(subject || "(no subject)")}</div>
+        <div class="list-comment">${escapeHtml(comment)}</div>
+        <div class="list-meta">
+          <span class="list-meta-item">
+            <i class="fa-regular fa-comment"></i>
+            ${thread.replies ?? 0} replies
+          </span>
+          <span class="list-meta-item">
+            <i class="fa-regular fa-image"></i>
+            ${thread.images ?? 0}
+          </span>
+          <span class="list-meta-item" style="color:var(--ink-ghost)">
+            No.${thread.no}
+          </span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+
+/* ─────────────────────────────────────────────
+   6. THREAD
+───────────────────────────────────────────── */
+
+/**
+ * Load and display a specific thread.
+ * @param {string|number} threadId
+ */
+async function openThread(threadId) {
+  state.activeThread = String(threadId);
+  state.currentPage  = "thread";
+
+  updateBreadcrumb();
+  showLoadingSpinner();
+
+  try {
+    const data = await apiFetch(`/${state.activeBoard}/thread/${threadId}.json`);
+    renderThread(data.posts);
+  } catch {
+    showContent(buildErrorBlock("failed to load thread"));
+  }
+}
+
+/**
+ * Render all posts in a thread.
+ * OP gets the .post-op class; replies get .post-reply.
+ *
+ * @param {Array} posts  raw post array from the API
+ */
+function renderThread(posts) {
+  if (!posts || posts.length === 0) {
+    showContent(buildErrorBlock("thread not found or deleted"));
+    return;
+  }
+
+  const opPost      = posts[0];
+  const replyPosts  = posts.slice(1);
+  const board       = state.activeBoard;
+
+  let html = `<div id="thread-container">`;
+
+  // OP post
+  html += `<div class="post-op" id="post-${opPost.no}">${buildPostHtml(opPost, board, true)}</div>`;
+
+  // Divider showing reply count
+  if (replyPosts.length > 0) {
+    const replyWord = replyPosts.length === 1 ? "reply" : "replies";
+    html += `
+      <div class="replies-divider">
+        <i class="fa-solid fa-comments"></i>
+        ${replyPosts.length} ${replyWord}
+      </div>
+    `;
+    html += replyPosts.map(p => `
+      <div class="post-reply" id="post-${p.no}">${buildPostHtml(p, board, false)}</div>
+    `).join("");
+  }
+
+  html += `</div>`;
+  showContent(html);
+
+  // Wire up thread-specific interactions
+  activateThreadInteractions();
+}
+
+/**
+ * Build the inner HTML for one post (used for both OP and replies).
+ * We deliberately omit post date for replies (only OP shows meta in the header).
+ * File size / dimensions are also omitted — image speaks for itself.
+ *
+ * @param {Object}  post   post object from the API
+ * @param {string}  board  board code
+ * @param {boolean} isOp   true if this is the opening post
+ * @returns {string}
+ */
+function buildPostHtml(post, board, isOp) {
+  const posterName  = post.name || "Anonymous";
+  const tripcode    = post.trip ? `<span class="poster-trip">${escapeHtml(post.trip)}</span>` : "";
+  const subjectLine = post.sub  ? `<div class="post-subject">${escapeHtml(post.sub)}</div>` : "";
+  const bodyText    = post.com  ? processPostBody(post.com) : "";
+
+  // Build the image / video section (only when the post has an attachment)
+  const fileHtml = post.tim && post.ext ? buildFileHtml(post, board) : "";
+
+  return `
+    <div class="post-header">
+      <span class="poster-name">${escapeHtml(posterName)}</span>
+      ${tripcode}
+      <span class="post-number">
+        No.<a href="#post-${post.no}">${post.no}</a>
+      </span>
+    </div>
+    ${subjectLine}
+    ${fileHtml}
+    ${bodyText ? `<div class="post-body">${bodyText}</div>` : ""}
+  `;
+}
+
+/**
+ * Build the HTML for a file attachment (image or video).
+ * Clicking an image opens the lightbox.
+ * Videos are rendered with a native <video> player.
+ *
+ * @param {Object} post
+ * @param {string} board
+ * @returns {string}
+ */
+function buildFileHtml(post, board) {
+  const ext      = (post.ext || "").toLowerCase();
+  const thumbSrc = `${THUMB_BASE}/${board}/${post.tim}s.jpg`;
+  const fullSrc  = `${IMAGE_BASE}/${board}/${post.tim}${post.ext}`;
+
+  if (INLINE_IMAGE_EXTS.includes(ext)) {
+    return `
+      <div class="post-image-wrap">
+        <img
+          class="post-thumbnail"
+          src="${thumbSrc}"
+          data-full-src="${fullSrc}"
+          data-preview-url="${thumbSrc}"
+          alt=""
+        />
+      </div>
+    `;
+  }
+
+  // WebM / MP4 — native video, muted and looping by default
+  if (ext === ".webm" || ext === ".mp4") {
+    return `
+      <div class="post-image-wrap">
+        <video
+          controls muted loop
+          style="max-width:100%;max-height:280px;border-radius:var(--radius-sm);border:1px solid var(--divider);display:block"
+        >
+          <source src="${fullSrc}" type="video/${ext.slice(1)}">
+        </video>
+      </div>
+    `;
+  }
+
+  return "";
+}
+
+/** Wire up all click/hover interactions specific to the thread view */
+function activateThreadInteractions() {
+  // Image thumbnail → lightbox
+  $(".post-thumbnail").on("click", function () {
+    openLightbox($(this).data("full-src"));
+  });
+
+  // Hover preview on thumbnails
+  activateHoverPreviews("[data-preview-url]");
+
+  // Spoiler text toggle
+  $(".spoiler-text").on("click", function () {
+    $(this).toggleClass("revealed");
+  });
+
+  // >>quote links → smooth-scroll to the referenced post
+  $(".quote-link").on("click", function (e) {
+    e.preventDefault();
+    const targetPostId = $(this).data("post-no");
+    const $target = $(`#post-${targetPostId}`);
+    if ($target.length) {
+      $target[0].scrollIntoView({ behavior: "smooth", block: "center" });
+      // Brief flash to indicate which post was jumped to
+      $target.css("outline", "1px solid var(--accent)");
+      setTimeout(() => $target.css("outline", ""), 800);
+    }
+  });
+}
+
+
+/* ─────────────────────────────────────────────
+   7. POST HELPERS
+───────────────────────────────────────────── */
+
+/**
+ * Transform raw 4chan post HTML into display HTML.
+ * Handles:
+ *   - >>quote links       → .quote-link anchors with comment icon
+ *   - >greentext lines    → .line-green spans
+ *   - <s>spoilers</s>     → .spoiler-text spans
+ *   - External <a> links  → open in new tab
+ *
+ * @param {string} rawHtml  the `com` field from the API
+ * @returns {string}
+ */
+function processPostBody(rawHtml) {
+  // Work line by line so greentext detection is accurate
+  const lines = rawHtml.split(/<br\s*\/?>/gi);
+
+  const processedLines = lines.map(line => {
+    // Turn >>12345 into styled clickable references
+    // The comment icon + "<<No.XXXXX" format matches the brief
+    line = line.replace(
+      /&gt;&gt;(\d+)/g,
+      (_, postNo) => `
+        <a class="reply-ref quote-link" data-post-no="${postNo}" href="#post-${postNo}">
+          <i class="fa-solid fa-comment"></i>&lt;&lt;No.${postNo}
+        </a>
+      `
+    );
+
+    // Detect greentext: line starts with ">" after stripping tags
+    // (but not lines that are quote links — those already got replaced above)
+    const plainText = line.replace(/<[^>]+>/g, "").replace(/&gt;/g, ">");
+    if (plainText.trimStart().startsWith(">") && !plainText.trimStart().startsWith(">>")) {
+      line = `<span class="line-green">${line}</span>`;
+    }
+
+    return line;
+  });
+
+  let processed = processedLines.join("<br>");
+
+  // Spoiler tags — hidden until the user clicks them
+  processed = processed.replace(
+    /<s>([\s\S]*?)<\/s>/gi,
+    (_, inner) => `<span class="spoiler-text">${inner}</span>`
+  );
+
+  // Rewrite external links to open in a new tab safely
+  processed = processed.replace(
+    /<a\s+[^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/gi,
+    (original, href, linkText) => {
+      // Don't rewrite our own quote links — they were already handled
+      if (linkText.includes("fa-comment")) return original;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+    }
+  );
+
+  return processed;
+}
+
+/**
+ * Strip all HTML tags from a string.
+ * Used to produce plain-text previews from the `com` field.
+ *
+ * @param {string} html
+ * @returns {string}
+ */
+function stripHtml(html) {
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  return div.textContent || "";
+}
+
+/**
+ * Escape special HTML characters to prevent XSS.
+ * Used everywhere we insert user-generated content as text.
+ *
+ * @param {string} str
+ * @returns {string}
+ */
+function escapeHtml(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Format a byte count into a human-readable string */
+function formatBytes(bytes) {
+  if (!bytes) return "";
+  if (bytes < 1024)       return `${bytes} B`;
+  if (bytes < 1_048_576)  return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1_048_576).toFixed(2)} MB`;
+}
+
+
+/* ─────────────────────────────────────────────
+   8. UI HELPERS
+───────────────────────────────────────────── */
+
+/** Replace the content area's innerHTML */
+function showContent(html) {
+  $("#content").html(html);
+}
+
+/** Show a centered loading spinner in the content area */
+function showLoadingSpinner() {
+  showContent(`<div class="state-block"><div class="spinner"></div></div>`);
+}
+
+/**
+ * Build a centered state block with an icon and message.
+ * @param {string} iconClass  Font Awesome class e.g. "fa-triangle-exclamation"
+ * @param {string} message    HTML allowed
+ * @returns {string}
+ */
+function buildStateBlock(iconClass, message) {
+  return `
+    <div class="state-block">
+      <div class="state-icon"><i class="fa-solid ${iconClass}"></i></div>
+      <div class="state-message">${message}</div>
+    </div>
+  `;
+}
+
+/**
+ * Build an error state with a "proxy settings" button.
+ * @param {string} message
+ * @returns {string}
+ */
+function buildErrorBlock(message) {
+  return `
+    <div class="state-block">
+      <div class="state-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <div class="state-message">${message}</div>
+      <button class="btn" onclick="$('#proxy-btn').trigger('click')">
+        <i class="fa-solid fa-tower-broadcast"></i>&nbsp; proxy settings
+      </button>
+    </div>
+  `;
+}
+
+/** Update the status bar dot + text */
+function setStatus(type, message) {
+  const $dot = $("#status-dot");
+  $dot.toggleClass("error", type === "error");
+  $("#status-text").text(message);
+}
+
+/**
+ * Rebuild the breadcrumb based on current page.
+ * Breadcrumb links call goHome() or selectBoard() inline.
+ */
+function updateBreadcrumb() {
+  let html = "";
+
+  if (state.currentPage === "welcome") {
+    html = `<span class="bc-current">home</span>`;
+
+  } else if (state.currentPage === "catalog") {
+    html = `
+      <span class="bc-link" id="bc-home">home</span>
+      <span class="bc-sep">/</span>
+      <span class="bc-current">/${state.activeBoard}/</span>
+    `;
+
+  } else if (state.currentPage === "thread") {
+    html = `
+      <span class="bc-link" id="bc-home">home</span>
+      <span class="bc-sep">/</span>
+      <span class="bc-link" id="bc-board">/${state.activeBoard}/</span>
+      <span class="bc-sep">/</span>
+      <span class="bc-current">thread ${state.activeThread}</span>
+    `;
+  }
+
+  $("#breadcrumb").html(html);
+
+  // Bind breadcrumb clicks after rendering
+  $("#bc-home").on("click", goHome);
+  $("#bc-board").on("click", () => selectBoard(state.activeBoard));
+}
+
+/** Navigate back to the welcome screen */
+function goHome() {
+  state.currentPage  = "welcome";
+  state.activeBoard  = null;
+  state.activeThread = null;
+
+  $(".board-row").removeClass("active");
+  $("#refresh-btn, #view-toggle").hide();
+
+  updateBreadcrumb();
+
+  showContent(`
+    <div id="welcome-screen">
+      <div class="welcome-logo">
+        chan<span class="welcome-accent">.</span>reader
+      </div>
+      <p class="welcome-tagline">
+        A focused, worksafe reader for 4chan.<br>
+        Just the content — nothing else.
+      </p>
+      <span class="welcome-hint">
+        <i class="fa-solid fa-arrow-left-long"></i>&nbsp; pick a board to start
+      </span>
+    </div>
+  `);
+}
+
+/** Show the refresh button (only meaningful when viewing a board or thread) */
+function showRefreshButton() {
+  $("#refresh-btn").show();
+}
+
+/** Show the grid/list toggle and sync its active state */
+function showViewToggle() {
+  $("#view-toggle").show();
+  syncViewToggleButtons();
+}
+
+/** Ensure the correct view toggle button shows as active */
+function syncViewToggleButtons() {
+  $(".view-toggle-btn").each(function () {
+    $(this).toggleClass("active", $(this).data("view") === state.view);
+  });
+}
+
+/* ─── LIGHTBOX ──────────────────────────────── */
+
+/** Open the lightbox with a given image URL */
+function openLightbox(imageUrl) {
+  $("#lightbox-img").attr("src", imageUrl);
+  $("#lightbox").addClass("open");
+}
+
+/** Close the lightbox and clear its src */
+function closeLightbox() {
+  $("#lightbox").removeClass("open");
+  setTimeout(() => $("#lightbox-img").attr("src", ""), 200);
+}
+
+/* ─── HOVER IMAGE PREVIEW ───────────────────── */
+
+let hoverPreviewTimer;
+
+/**
+ * Attach mousemove/mouseleave handlers to elements that carry
+ * a data-preview-url attribute.
+ * Uses a short delay to avoid flickering during fast mouse sweeps.
+ *
+ * @param {string} selector  jQuery selector for triggering elements
+ */
+function activateHoverPreviews(selector) {
+  $(document)
+    .off("mouseenter", selector)
+    .off("mouseleave", selector)
+    .off("mousemove", selector);
+
+  $(document).on("mouseenter", selector, function () {
+    const previewUrl = $(this).data("preview-url");
+    if (!previewUrl) return;
+
+    clearTimeout(hoverPreviewTimer);
+    hoverPreviewTimer = setTimeout(() => {
+      $("#hover-preview-img").attr("src", previewUrl);
+      $("#hover-preview").show();
+    }, 160);
+  });
+
+  $(document).on("mouseleave", selector, function () {
+    clearTimeout(hoverPreviewTimer);
+    $("#hover-preview").hide();
+    $("#hover-preview-img").attr("src", "");
+  });
+
+  $(document).on("mousemove", selector, function (e) {
+    positionHoverPreview(e.clientX, e.clientY);
+  });
+}
+
+/**
+ * Position the hover preview near the cursor without going off-screen.
+ * @param {number} cursorX
+ * @param {number} cursorY
+ */
+function positionHoverPreview(cursorX, cursorY) {
+  const previewWidth  = 300;
+  const previewHeight = 300;
+  const offset        = 14;
+
+  let x = cursorX + offset;
+  let y = cursorY + offset;
+
+  // If the preview would overflow the right edge, flip it to the left
+  if (x + previewWidth > window.innerWidth) {
+    x = cursorX - previewWidth - offset;
+  }
+
+  // If it overflows the bottom, move it up
+  if (y + previewHeight > window.innerHeight) {
+    y = cursorY - previewHeight - offset;
+  }
+
+  $("#hover-preview").css({ left: x, top: y });
+}
+
+/* ─── LAZY IMAGE LOADING ────────────────────── */
+
+/**
+ * Use IntersectionObserver to load images only when they are
+ * near the viewport. Looks for elements with data-lazy-src.
+ * Falls back to eager loading if the browser doesn't support it.
+ */
+function activateLazyImages() {
+  const $images = $("img[data-lazy-src]");
+
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(
+      (entries, obs) => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          const img = entry.target;
+          img.src = img.dataset.lazySrc;
+          delete img.dataset.lazySrc;
+          obs.unobserve(img);
+        });
+      },
+      { rootMargin: "300px" }  // start loading 300px before entering view
+    );
+
+    $images.each(function () { observer.observe(this); });
+
+  } else {
+    // Fallback: just set all srcs immediately
+    $images.each(function () {
+      this.src = this.dataset.lazySrc;
+    });
+  }
+}
+
+
+/* ─────────────────────────────────────────────
+   9. EVENTS
+───────────────────────────────────────────── */
+
+$(function () {
+
+  /* ── Theme toggle ───────────────────────── */
+  $("#theme-btn").on("click", function () {
+    const current = state.theme;
+    const next    = current === "dark" ? "light" : "dark";
+    state.theme   = next;
+    localStorage.setItem("chan_theme", next);
+    $("html").attr("data-theme", next);
+  });
+
+  /* ── Board search filter ────────────────── */
+  $("#board-search-input").on("input", function () {
+    const query = $(this).val().toLowerCase().trim();
+    const filtered = query
+      ? _.filter(state.allBoards, b =>
+          b.board.includes(query) || b.title.toLowerCase().includes(query)
+        )
+      : state.allBoards;
+    renderBoardList(filtered);
+  });
+
+  /* ── Board row click (delegated, because rows are rebuilt on filter) ── */
+  $("#board-list").on("click", ".board-row", function () {
+    selectBoard($(this).data("board"));
+  });
+
+  /* ── Refresh button ─────────────────────── */
+  $("#refresh-btn").on("click", function () {
+    if (state.currentPage === "catalog")     loadCatalog();
+    if (state.currentPage === "thread")      openThread(state.activeThread);
+  });
+
+  /* ── View toggle (grid / list) ──────────── */
+  $("#view-toggle").on("click", ".view-toggle-btn", function () {
+    const chosen = $(this).data("view");
+    if (chosen === state.view) return;    // nothing to do
+
+    state.view = chosen;
+    localStorage.setItem("chan_view", chosen);
+    syncViewToggleButtons();
+
+    if (state.currentPage === "catalog") renderCatalog(state.catalogData);
+  });
+
+  /* ── Lightbox close ─────────────────────── */
+  $("#lightbox, #lightbox-close").on("click", function (e) {
+    // Clicking the image itself should not close; only the backdrop or X button
+    if (e.target === this) closeLightbox();
+  });
+
+  /* ── Proxy modal open/close ─────────────── */
+  $("#proxy-btn").on("click", function () {
+    $("#proxy-url-input").val(state.proxy);
+    $("#proxy-modal").addClass("open");
+  });
+
+  $("#proxy-cancel-btn").on("click", function () {
+    $("#proxy-modal").removeClass("open");
+  });
+
+  // Close when clicking the dark backdrop
+  $("#proxy-modal").on("click", function (e) {
+    if (e.target === this) $("#proxy-modal").removeClass("open");
+  });
+
+  /* ── Proxy preset pills ─────────────────── */
+  $(".preset-pill").on("click", function () {
+    $("#proxy-url-input").val($(this).data("proxy"));
+  });
+
+  /* ── Save proxy setting ─────────────────── */
+  $("#proxy-save-btn").on("click", function () {
+    state.proxy = $("#proxy-url-input").val().trim();
+    localStorage.setItem("chan_proxy", state.proxy);
+    $("#proxy-modal").removeClass("open");
+
+    // Re-fetch whatever page is currently open
+    if      (state.currentPage === "catalog") loadCatalog();
+    else if (state.currentPage === "thread")  openThread(state.activeThread);
+    else                                       loadBoards();
+  });
+
+  /* ── Global keyboard shortcuts ──────────── */
+  $(document).on("keydown", function (e) {
+    // Escape closes any open overlay
+    if (e.key === "Escape") {
+      closeLightbox();
+      $("#proxy-modal").removeClass("open");
+    }
+
+    // Alt + ← navigates back (thread → catalog → home)
+    if (e.altKey && e.key === "ArrowLeft") {
+      if      (state.currentPage === "thread")  selectBoard(state.activeBoard);
+      else if (state.currentPage === "catalog") goHome();
+    }
+  });
+
+});
+
+
+/* ─────────────────────────────────────────────
+   10. INIT
+───────────────────────────────────────────── */
+
+// Apply saved theme before first paint
+$("html").attr("data-theme", state.theme);
+
+// Load the board list as soon as the script runs
+loadBoards();
+</script>
+
+</body>
+</html>
