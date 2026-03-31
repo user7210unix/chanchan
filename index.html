@@ -1,18 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>4chan Reader</title>
-  <style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reader</title>
 
-    /* ─── Design tokens ──────────────────────────────────────────────────── */
-    /*
-     * Three greens from the spec, plus white for the page background.
-     * --op-bg is the light cream for OP posts and board buttons.
-     * --reply-bg is the muted sage for reply posts.
-     * --accent is the stronger green used for borders and the header bar.
-     */
+  <style>
     :root {
       --bg:        #ffffff;
       --op-bg:     #FCF9EA;
@@ -27,14 +20,10 @@
       --font-ui:   'Courier New', Courier, monospace;
 
       --max-width: 900px;
-      --post-indent: 24px;   /* how far replies are pushed right vs OP */
+      --post-indent: 24px;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       background: var(--bg);
@@ -44,22 +33,15 @@
       line-height: 1.6;
     }
 
-    a {
-      color: var(--link-red);
-      text-decoration: none;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
+    a { color: var(--link-red); text-decoration: none; }
+    a:hover { text-decoration: underline; }
 
     button {
       cursor: pointer;
       font-family: inherit;
     }
 
-
-    /* ─── Header / breadcrumb ────────────────────────────────────────────── */
+    /* ─── Header ─────────────────────────────────────────────────────── */
 
     #header {
       background: var(--accent);
@@ -82,6 +64,7 @@
       font-family: var(--font-ui);
       font-size: 12px;
       color: #ffffff;
+      flex: 1;
     }
 
     #breadcrumb a {
@@ -90,12 +73,29 @@
       cursor: pointer;
     }
 
-    #breadcrumb a:hover {
-      opacity: 0.8;
+    #breadcrumb a:hover { opacity: 0.85; }
+
+    #header-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
+    .header-btn {
+      border: 1px solid rgba(255,255,255,0.65);
+      background: rgba(255,255,255,0.15);
+      color: white;
+      padding: 4px 10px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      border-radius: 4px;
+    }
 
-    /* ─── Main content area ──────────────────────────────────────────────── */
+    .header-btn:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
+    /* ─── Main ───────────────────────────────────────────────────────── */
 
     #main {
       max-width: var(--max-width);
@@ -103,7 +103,6 @@
       padding: 16px;
     }
 
-    /* Thin rule with a label — used as section headings above catalog/thread */
     .section-label {
       font-family: var(--font-ui);
       font-size: 12px;
@@ -113,8 +112,7 @@
       margin-bottom: 14px;
     }
 
-
-    /* ─── Status messages (loading / error) ──────────────────────────────── */
+    /* ─── Status ─────────────────────────────────────────────────────── */
 
     .status-msg {
       padding: 24px 0;
@@ -128,8 +126,7 @@
       color: var(--link-red);
     }
 
-
-    /* ─── Board list ─────────────────────────────────────────────────────── */
+    /* ─── Boards ─────────────────────────────────────────────────────── */
 
     .board-group {
       margin-bottom: 20px;
@@ -176,8 +173,34 @@
       color: #ddd;
     }
 
+    /* ─── Catalog controls ───────────────────────────────────────────── */
 
-    /* ─── Catalog grid ───────────────────────────────────────────────────── */
+    .catalog-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+
+    .catalog-controls select, .catalog-controls input {
+      border: 1px solid var(--accent);
+      background: var(--op-bg);
+      padding: 4px 8px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .catalog-controls input {
+      flex: 1;
+      min-width: 180px;
+    }
+
+    /* ─── Catalog grid ──────────────────────────────────────────────── */
 
     #catalog-grid {
       display: grid;
@@ -204,7 +227,6 @@
       margin-bottom: 6px;
     }
 
-    /* placeholder block when a thread has no image */
     .catalog-card .no-image {
       width: 100%;
       height: 110px;
@@ -244,31 +266,41 @@
       margin-top: 5px;
     }
 
-
-    /* ─── Thread posts ───────────────────────────────────────────────────── */
+    /* ─── Thread posts (less boxed AI vibe) ───────────────────────────── */
 
     .post {
-      padding: 8px 10px;
-      border: 1px solid var(--accent);
-      margin-bottom: 6px;
+      padding: 6px 0;
+      margin-bottom: 10px;
+      border: none;
     }
 
     .post.is-op {
-      background: var(--op-bg);
+      background: transparent;
     }
 
     .post.is-reply {
-      background: var(--reply-bg);
+      background: transparent;
       margin-left: var(--post-indent);
     }
 
-    /* Header row: subject · name · date · No.12345 */
+    .post.is-highlighted {
+      outline: 3px solid var(--link-red);
+      padding: 6px 10px;
+      border-radius: 3px;
+      animation: postFlash 1.2s ease-out;
+    }
+
+    @keyframes postFlash {
+      0%   { filter: brightness(1.15); }
+      100% { filter: brightness(1.0); }
+    }
+
     .post-header {
       display: flex;
       flex-wrap: wrap;
       align-items: baseline;
       gap: 6px;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       font-size: 12px;
       color: var(--muted);
     }
@@ -290,10 +322,6 @@
       color: var(--muted);
     }
 
-    /*
-     * The "No.12345" clickable label. Hovering it triggers the reply popover
-     * that lists every post which has >>12345 in its comment.
-     */
     .post-no {
       font-family: var(--font-ui);
       font-size: 11px;
@@ -307,29 +335,34 @@
       text-decoration: underline;
     }
 
-    /* A small "(3 replies)" indicator that lives beside the post number */
     .reply-count-badge {
       font-family: var(--font-ui);
       font-size: 10px;
       color: var(--accent);
     }
 
-    /* Content row: optional thumbnail left, comment text right */
     .post-body {
       display: flex;
-      gap: 10px;
-    }
-
-    .post-image a {
-      display: block;
+      gap: 14px;
+      align-items: flex-start;
     }
 
     .post-image img {
-      max-width: 140px;
-      max-height: 140px;
+      max-width: 420px;
+      max-height: 420px;
+      width: auto;
+      height: auto;
       object-fit: contain;
       display: block;
-      border: 1px solid var(--accent);
+      cursor: pointer;
+    }
+
+    .post-video video {
+      max-width: 520px;
+      max-height: 520px;
+      width: 100%;
+      height: auto;
+      display: block;
     }
 
     .post-comment {
@@ -340,12 +373,10 @@
       font-size: 14px;
     }
 
-    /* 4chan's green-text span class */
     .post-comment .quote {
       color: var(--quote-green);
     }
 
-    /* >>postno quotelinks inside post bodies */
     .post-comment a.quotelink {
       color: var(--link-red);
     }
@@ -354,12 +385,7 @@
       text-decoration: underline;
     }
 
-
-    /* ─── Reply popover ──────────────────────────────────────────────────── */
-    /*
-     * Appears below "No.12345" on hover. Lists every post number that has
-     * quoted this post via >>#. Disappears when the mouse leaves the label.
-     */
+    /* ─── Reply popover ──────────────────────────────────────────────── */
 
     #reply-popover {
       position: fixed;
@@ -370,7 +396,7 @@
       font-size: 12px;
       z-index: 200;
       display: none;
-      pointer-events: none;
+      pointer-events: auto;
       max-width: 260px;
       line-height: 1.8;
     }
@@ -384,33 +410,198 @@
     #reply-popover .popover-no {
       color: var(--link-red);
       margin-right: 4px;
+      cursor: pointer;
+    }
+
+    #reply-popover .popover-no:hover {
+      text-decoration: underline;
+    }
+
+    /* ─── Lightbox ───────────────────────────────────────────────────── */
+
+    #lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    #lightbox img, #lightbox video {
+      max-width: 95vw;
+      max-height: 95vh;
+      object-fit: contain;
+    }
+
+    #lightbox .close {
+      position: fixed;
+      top: 14px;
+      right: 20px;
+      font-family: var(--font-ui);
+      font-size: 18px;
+      color: white;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* ─── Settings modal ─────────────────────────────────────────────── */
+
+    #settings-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: none;
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .settings-panel {
+      width: 100%;
+      max-width: 560px;
+      background: var(--op-bg);
+      border: 1px solid var(--accent);
+      padding: 14px 16px;
+      border-radius: 6px;
+      font-family: var(--font-ui);
+    }
+
+    .settings-panel h2 {
+      font-size: 14px;
+      margin-bottom: 10px;
+      color: var(--text);
+    }
+
+    .settings-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .settings-row label {
+      min-width: 170px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .settings-row input[type="text"] {
+      flex: 1;
+      border: 1px solid var(--accent);
+      padding: 5px 8px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      background: white;
+    }
+
+    .settings-row input[type="checkbox"] {
+      transform: scale(1.1);
+    }
+
+    .settings-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .settings-actions button {
+      border: 1px solid var(--accent);
+      background: white;
+      padding: 5px 10px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+    }
+
+    .settings-actions button:hover {
+      background: var(--reply-bg);
     }
 
   </style>
 </head>
+
 <body>
 
   <div id="header">
-    <h1>4chan</h1>
+    <h1></h1>
     <nav id="breadcrumb"></nav>
+
+    <div id="header-controls">
+      <button class="header-btn" onclick="openSettings()">Filters</button>
+    </div>
   </div>
 
   <div id="main">
     <div id="content"></div>
   </div>
 
-  <!-- Floats near "No.12345" on hover, shows who quoted that post -->
   <div id="reply-popover"></div>
+
+  <!-- Lightbox -->
+  <div id="lightbox" onclick="closeLightbox()">
+    <div class="close">✕</div>
+    <div id="lightbox-content"></div>
+  </div>
+
+  <!-- Settings modal -->
+  <div id="settings-modal" onclick="closeSettings()">
+    <div class="settings-panel" onclick="event.stopPropagation()">
+      <h2>Filters / Settings</h2>
+
+      <div class="settings-row">
+        <label>Catalog sort default:</label>
+        <select id="setting-sort">
+          <option value="bump">Bump order</option>
+          <option value="replies">Most replies</option>
+          <option value="images">Most images</option>
+          <option value="newest">Newest thread</option>
+          <option value="oldest">Oldest thread</option>
+        </select>
+      </div>
+
+      <div class="settings-row">
+        <label>Catalog search (subject+comment):</label>
+        <input id="setting-search" type="text" placeholder="example: linux, wallpaper, etc">
+      </div>
+
+      <div class="settings-row">
+        <label>Hide threads without subject:</label>
+        <input id="setting-hide-nosub" type="checkbox">
+      </div>
+
+      <div class="settings-row">
+        <label>Hide threads without images:</label>
+        <input id="setting-hide-noimg" type="checkbox">
+      </div>
+
+      <div class="settings-row">
+        <label>Hide threads containing words:</label>
+        <input id="setting-blockwords" type="text" placeholder="comma separated: furry, crypto, etc">
+      </div>
+
+      <div class="settings-row">
+        <label>Thread view: hide posts with no media:</label>
+        <input id="setting-thread-mediaonly" type="checkbox">
+      </div>
+
+      <div class="settings-actions">
+        <button onclick="resetSettings()">Reset</button>
+        <button onclick="closeSettings()">Close</button>
+        <button onclick="saveSettings()">Save</button>
+      </div>
+    </div>
+  </div>
+
 
   <script>
 
     // ─────────────────────────────────────────────────────────────────────────
     // Config
-    //
-    // These are the only three URLs the whole app needs. The proxy is required
-    // because 4cdn.org only allows CORS from 4chan.org/4channel.org itself, so
-    // direct browser requests get blocked. codetabs forwards the request
-    // server-side and hands back the JSON without CORS restrictions.
     // ─────────────────────────────────────────────────────────────────────────
 
     const PROXY = 'https://api.codetabs.com/v1/proxy?quest=';
@@ -420,9 +611,6 @@
 
     // ─────────────────────────────────────────────────────────────────────────
     // View enum
-    //
-    // Object.freeze makes this behave like a true enum — the properties can't
-    // be reassigned at runtime. JS has no native enum keyword.
     // ─────────────────────────────────────────────────────────────────────────
 
     const View = Object.freeze({
@@ -433,26 +621,53 @@
 
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Settings persistence
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const SETTINGS_KEY = 'chanReaderSettings_v1';
+
+    const defaultSettings = {
+      catalogSort: 'bump',
+      catalogSearch: '',
+      hideNoSubject: false,
+      hideNoImage: false,
+      blockWords: '',
+      threadMediaOnly: false,
+    };
+
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        if (!raw) return { ...defaultSettings };
+        const parsed = JSON.parse(raw);
+        return { ...defaultSettings, ...parsed };
+      } catch {
+        return { ...defaultSettings };
+      }
+    }
+
+    function persistSettings() {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
+    }
+
+
+    // ─────────────────────────────────────────────────────────────────────────
     // App state
-    //
-    // Everything the reader needs to know about what it's currently showing.
-    // Single object, mutated in place — keeps navigation simple.
     // ─────────────────────────────────────────────────────────────────────────
 
     const state = {
       view:     View.BOARDS,
-      board:    null,       // string e.g. 'g', 'pol', 'a'
-      threadNo: null,       // number — the OP post ID
-      posts:    [],         // array of post objects in the current thread
-      replyMap: {},         // { postNo: [postNos that quoted this post] }
+      board:    null,
+      threadNo: null,
+      posts:    [],
+      replyMap: {},
+
+      settings: loadSettings(),
     };
 
 
     // ─────────────────────────────────────────────────────────────────────────
     // URL builders
-    //
-    // One place for all string construction. Anything that calls the API or CDN
-    // goes through here so typos only need fixing in one spot.
     // ─────────────────────────────────────────────────────────────────────────
 
     const Url = {
@@ -466,9 +681,6 @@
 
     // ─────────────────────────────────────────────────────────────────────────
     // apiFetch
-    //
-    // Wraps fetch with a status check. Throws on non-2xx so callers can use
-    // a single try/catch instead of checking res.ok everywhere.
     // ─────────────────────────────────────────────────────────────────────────
 
     async function apiFetch(endpoint) {
@@ -480,12 +692,6 @@
 
     // ─────────────────────────────────────────────────────────────────────────
     // buildReplyMap
-    //
-    // Scans all post comments for quotelinks (href="#p12345") and builds a
-    // reverse index: for each post number X, store every post that quoted >>X.
-    //
-    // This is what powers the "who replied to this post" popover feature.
-    // We build it once after loading a thread and keep it in state.replyMap.
     // ─────────────────────────────────────────────────────────────────────────
 
     function buildReplyMap(posts) {
@@ -494,8 +700,6 @@
       for (const post of posts) {
         if (!post.com) continue;
 
-        // 4chan encodes quotelinks as <a href="#p12345" class="quotelink">
-        // so we match the href attribute pattern to find quoted post IDs.
         const matches = post.com.matchAll(/href="#p(\d+)"/g);
 
         for (const match of matches) {
@@ -511,9 +715,6 @@
 
     // ─────────────────────────────────────────────────────────────────────────
     // stripHtml
-    //
-    // Removes all tags from an HTML string and collapses whitespace. Used for
-    // the catalog preview text — we show raw text, not rendered HTML there.
     // ─────────────────────────────────────────────────────────────────────────
 
     function stripHtml(html) {
@@ -523,7 +724,7 @@
 
 
     // ─────────────────────────────────────────────────────────────────────────
-    // DOM references — grab once, use everywhere
+    // DOM references
     // ─────────────────────────────────────────────────────────────────────────
 
     const contentEl    = document.getElementById('content');
@@ -550,9 +751,6 @@
 
     // ─────────────────────────────────────────────────────────────────────────
     // updateBreadcrumb
-    //
-    // Rebuilds the "Home > /g/ > Thread #12345" nav in the header bar.
-    // Each segment except the last is a clickable link.
     // ─────────────────────────────────────────────────────────────────────────
 
     function updateBreadcrumb() {
@@ -572,7 +770,53 @@
 
 
     // ─────────────────────────────────────────────────────────────────────────
-    // goBoards — fetch boards.json and render the board picker
+    // Settings modal UI
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function openSettings() {
+      const modal = document.getElementById('settings-modal');
+      modal.style.display = 'flex';
+
+      document.getElementById('setting-sort').value = state.settings.catalogSort;
+      document.getElementById('setting-search').value = state.settings.catalogSearch;
+      document.getElementById('setting-hide-nosub').checked = state.settings.hideNoSubject;
+      document.getElementById('setting-hide-noimg').checked = state.settings.hideNoImage;
+      document.getElementById('setting-blockwords').value = state.settings.blockWords;
+      document.getElementById('setting-thread-mediaonly').checked = state.settings.threadMediaOnly;
+    }
+
+    function closeSettings() {
+      document.getElementById('settings-modal').style.display = 'none';
+    }
+
+    function saveSettings() {
+      state.settings.catalogSort = document.getElementById('setting-sort').value;
+      state.settings.catalogSearch = document.getElementById('setting-search').value.trim();
+      state.settings.hideNoSubject = document.getElementById('setting-hide-nosub').checked;
+      state.settings.hideNoImage = document.getElementById('setting-hide-noimg').checked;
+      state.settings.blockWords = document.getElementById('setting-blockwords').value.trim();
+      state.settings.threadMediaOnly = document.getElementById('setting-thread-mediaonly').checked;
+
+      persistSettings();
+      closeSettings();
+
+      // Re-render current view with new settings
+      if (state.view === View.CATALOG && state.board) goCatalog(state.board);
+      if (state.view === View.THREAD && state.threadNo) goThread(state.threadNo);
+    }
+
+    function resetSettings() {
+      state.settings = { ...defaultSettings };
+      persistSettings();
+      openSettings();
+
+      if (state.view === View.CATALOG && state.board) goCatalog(state.board);
+      if (state.view === View.THREAD && state.threadNo) goThread(state.threadNo);
+    }
+
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Boards
     // ─────────────────────────────────────────────────────────────────────────
 
     async function goBoards() {
@@ -591,8 +835,6 @@
     }
 
     function renderBoards(boards) {
-      // The API has a ws_board flag: 1 = worksafe, 0 = not worksafe.
-      // Split into two groups so the layout is easier to navigate.
       const worksafe    = boards.filter(b => b.ws_board === 1);
       const notWorksafe = boards.filter(b => b.ws_board === 0);
 
@@ -619,7 +861,64 @@
 
 
     // ─────────────────────────────────────────────────────────────────────────
-    // goCatalog — fetch catalog.json and render the thread grid
+    // Catalog filtering + sorting
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function matchesBlockWords(thread) {
+      const bw = state.settings.blockWords
+        .split(',')
+        .map(x => x.trim().toLowerCase())
+        .filter(Boolean);
+
+      if (bw.length === 0) return true;
+
+      const text = `${thread.sub || ''} ${stripHtml(thread.com || '')}`.toLowerCase();
+      return !bw.some(word => text.includes(word));
+    }
+
+    function matchesSearch(thread) {
+      const q = state.settings.catalogSearch.trim().toLowerCase();
+      if (!q) return true;
+
+      const text = `${thread.sub || ''} ${stripHtml(thread.com || '')}`.toLowerCase();
+      return text.includes(q);
+    }
+
+    function catalogFilterThreads(threads) {
+      return threads.filter(t => {
+        if (state.settings.hideNoSubject && !t.sub) return false;
+        if (state.settings.hideNoImage && !t.tim) return false;
+        if (!matchesBlockWords(t)) return false;
+        if (!matchesSearch(t)) return false;
+        return true;
+      });
+    }
+
+    function catalogSortThreads(threads) {
+      const sort = state.settings.catalogSort;
+
+      if (sort === 'replies') {
+        return [...threads].sort((a, b) => (b.replies || 0) - (a.replies || 0));
+      }
+
+      if (sort === 'images') {
+        return [...threads].sort((a, b) => (b.images || 0) - (a.images || 0));
+      }
+
+      if (sort === 'newest') {
+        return [...threads].sort((a, b) => (b.no || 0) - (a.no || 0));
+      }
+
+      if (sort === 'oldest') {
+        return [...threads].sort((a, b) => (a.no || 0) - (b.no || 0));
+      }
+
+      return threads;
+    }
+
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // goCatalog
     // ─────────────────────────────────────────────────────────────────────────
 
     async function goCatalog(board) {
@@ -631,23 +930,21 @@
 
       try {
         const pages = await apiFetch(Url.catalog(board));
-
-        // catalog.json is an array of page objects, each with a threads array.
-        // Flatten all pages into one list of thread objects.
         const threads = pages.flatMap(page => page.threads);
 
-        renderCatalog(threads);
+        const filtered = catalogFilterThreads(threads);
+        const sorted   = catalogSortThreads(filtered);
+
+        renderCatalog(sorted, threads.length);
       } catch (err) {
         setError(err.message);
       }
     }
 
-    function renderCatalog(threads) {
-      const PREVIEW_CHARS = 120;   // how much of the comment text to show
+    function renderCatalog(threads, totalCount) {
+      const PREVIEW_CHARS = 120;
 
       const cards = threads.map(t => {
-        // tim is the Unix timestamp used as the image filename on the CDN.
-        // If a thread has no image, tim is absent.
         const imageHtml = t.tim
           ? `<img src="${Url.thumb(state.board, t.tim)}" alt="" loading="lazy">`
           : `<div class="no-image">no image</div>`;
@@ -669,14 +966,46 @@
       });
 
       setContent(`
-        <p class="section-label">/${state.board}/ — ${threads.length} threads</p>
+        <p class="section-label">/${state.board}/ — showing ${threads.length} / ${totalCount} threads</p>
+
+        <div class="catalog-controls">
+          <label>Sort:</label>
+          <select onchange="setCatalogSort(this.value)">
+            <option value="bump"    ${state.settings.catalogSort === 'bump' ? 'selected' : ''}>Bump</option>
+            <option value="replies" ${state.settings.catalogSort === 'replies' ? 'selected' : ''}>Replies</option>
+            <option value="images"  ${state.settings.catalogSort === 'images' ? 'selected' : ''}>Images</option>
+            <option value="newest"  ${state.settings.catalogSort === 'newest' ? 'selected' : ''}>Newest</option>
+            <option value="oldest"  ${state.settings.catalogSort === 'oldest' ? 'selected' : ''}>Oldest</option>
+          </select>
+
+          <label>Search:</label>
+          <input
+            type="text"
+            placeholder="subject/comment..."
+            value="${state.settings.catalogSearch.replace(/"/g, '&quot;')}"
+            oninput="setCatalogSearch(this.value)"
+          >
+        </div>
+
         <div id="catalog-grid">${cards.join('')}</div>
       `);
     }
 
+    function setCatalogSort(mode) {
+      state.settings.catalogSort = mode;
+      persistSettings();
+      goCatalog(state.board);
+    }
+
+    function setCatalogSearch(text) {
+      state.settings.catalogSearch = text;
+      persistSettings();
+      goCatalog(state.board);
+    }
+
 
     // ─────────────────────────────────────────────────────────────────────────
-    // goThread — fetch a thread JSON and render all posts
+    // Thread
     // ─────────────────────────────────────────────────────────────────────────
 
     async function goThread(no) {
@@ -696,52 +1025,65 @@
     }
 
     function renderThread(posts) {
-      const postsHtml = posts.map(renderPost).join('');
+      let filteredPosts = posts;
+
+      if (state.settings.threadMediaOnly) {
+        filteredPosts = posts.filter(p => !!p.tim);
+      }
+
+      const postsHtml = filteredPosts.map(renderPost).join('');
 
       setContent(`
-        <p class="section-label">Thread #${state.threadNo} — ${posts.length} posts</p>
+        <p class="section-label">Thread #${state.threadNo} — ${filteredPosts.length} posts</p>
         ${postsHtml}
       `);
 
-      // Wire up quotelinks so >>12345 scrolls to that post instead of
-      // following the bare href anchor (which 4cdn.org would resolve to).
       attachQuotelinkHandlers();
     }
 
     function renderPost(post) {
       const isOp = post.resto === 0;
 
-      // Subject only appears on OP posts (and rarely on replies, though
-      // the API technically allows it — handle both just in case).
       const subjectHtml = post.sub
         ? `<span class="post-subject">${post.sub}</span>`
         : '';
 
-      // ID field is only present on boards that show poster IDs (like /pol/).
       const idHtml = post.id
         ? `<span class="post-id">ID: ${post.id}</span>`
         : '';
 
-      // Show how many replies this post has received, if any.
-      // We read from replyMap which was built after loading the full thread.
       const repliers    = state.replyMap[post.no];
       const replyCount  = repliers ? repliers.length : 0;
       const replyBadge  = replyCount > 0
         ? `<span class="reply-count-badge">(${replyCount} repl${replyCount === 1 ? 'y' : 'ies'})</span>`
         : '';
 
-      // Image thumbnail — clicking opens the full-size image in a new tab.
-      const imageHtml = post.tim
-        ? `<div class="post-image">
-             <a href="${Url.image(state.board, post.tim, post.ext)}" target="_blank" rel="noopener">
-               <img
-                 src="${Url.thumb(state.board, post.tim)}"
-                 alt="${post.filename || ''}"
-                 title="${post.filename}${post.ext} (${post.w}x${post.h})"
-               >
-             </a>
-           </div>`
-        : '';
+      let mediaHtml = '';
+
+      if (post.tim) {
+        const fileUrl = Url.image(state.board, post.tim, post.ext);
+
+        if (post.ext === '.webm' || post.ext === '.mp4') {
+          mediaHtml = `
+            <div class="post-video">
+              <video controls preload="metadata" onclick="event.stopPropagation()">
+                <source src="${fileUrl}" type="video/${post.ext.slice(1)}">
+              </video>
+            </div>
+          `;
+        } else {
+          mediaHtml = `
+            <div class="post-image">
+              <img
+                src="${fileUrl}"
+                alt="${post.filename || ''}"
+                title="${post.filename || ''}${post.ext || ''} (${post.w || ''}x${post.h || ''})"
+                onclick="openLightbox('${fileUrl}', '${post.ext}')"
+              >
+            </div>
+          `;
+        }
+      }
 
       const commentHtml = post.com
         ? `<div class="post-comment">${post.com}</div>`
@@ -761,24 +1103,45 @@
             >No.${post.no}</span>
             ${replyBadge}
           </div>
+
           <div class="post-body">
-            ${imageHtml}
+            ${mediaHtml}
             ${commentHtml}
           </div>
         </div>
       `;
     }
 
-    // After the thread HTML is in the DOM, find every quotelink and attach
-    // a click handler that scrolls the target post into view. We do this
-    // instead of using bare href="#p12345" because 4cdn.org isn't our host.
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Quotelinks: click >>1234 jump + highlight
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function highlightPost(el) {
+      el.classList.add('is-highlighted');
+      setTimeout(() => el.classList.remove('is-highlighted'), 1300);
+    }
+
+    function jumpToPost(postNo) {
+      const target = document.querySelector(`#p${postNo}`);
+      if (!target) return;
+
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      highlightPost(target);
+    }
+
     function attachQuotelinkHandlers() {
       contentEl.querySelectorAll('a.quotelink').forEach(link => {
         link.addEventListener('click', e => {
           e.preventDefault();
-          const targetId = link.getAttribute('href');   // "#p12345"
-          const target   = document.querySelector(targetId);
-          if (target) target.scrollIntoView({ block: 'center' });
+
+          const targetId = link.getAttribute('href');
+          if (!targetId) return;
+
+          const match = targetId.match(/#p(\d+)/);
+          if (!match) return;
+
+          jumpToPost(match[1]);
         });
       });
     }
@@ -786,12 +1149,6 @@
 
     // ─────────────────────────────────────────────────────────────────────────
     // Reply popover
-    //
-    // When you hover "No.12345", we look up state.replyMap[12345] and show a
-    // small floating box listing every post that has quoted >>12345.
-    //
-    // The popover is position:fixed so it floats over the page without
-    // affecting layout. We position it just below the hovered element.
     // ─────────────────────────────────────────────────────────────────────────
 
     function showPopover(event, postNo) {
@@ -799,7 +1156,7 @@
       if (!repliers || repliers.length === 0) return;
 
       const noLinks = repliers
-        .map(no => `<span class="popover-no">>>${no}</span>`)
+        .map(no => `<span class="popover-no" onclick="jumpToPost(${no})">>>${no}</span>`)
         .join(' ');
 
       popoverEl.innerHTML = `
@@ -809,17 +1166,12 @@
 
       popoverEl.style.display = 'block';
 
-      // Position below the "No.XXXXX" element. Using getBoundingClientRect
-      // gives us viewport-relative coords, which work directly with
-      // position:fixed left/top.
-      const GAP  = 4;   // px gap between element bottom and popover top
+      const GAP  = 4;
       const rect = event.currentTarget.getBoundingClientRect();
 
       let x = rect.left;
       let y = rect.bottom + GAP;
 
-      // If the popover would go off the right edge of the viewport, nudge it left.
-      // We read offsetWidth now because display:block makes it measurable.
       const overflowRight = x + popoverEl.offsetWidth - window.innerWidth;
       if (overflowRight > 0) x -= overflowRight + GAP;
 
@@ -833,7 +1185,48 @@
 
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Boot — start on the board list every time the page loads
+    // Lightbox
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function openLightbox(url, ext) {
+      const lightbox = document.getElementById('lightbox');
+      const content  = document.getElementById('lightbox-content');
+
+      content.innerHTML = '';
+
+      if (ext === '.webm' || ext === '.mp4') {
+        const video = document.createElement('video');
+        video.controls = true;
+        video.autoplay = true;
+        video.innerHTML = `<source src="${url}">`;
+        content.appendChild(video);
+      } else {
+        const img = document.createElement('img');
+        img.src = url;
+        content.appendChild(img);
+      }
+
+      lightbox.style.display = 'flex';
+    }
+
+    function closeLightbox() {
+      const lightbox = document.getElementById('lightbox');
+      const content  = document.getElementById('lightbox-content');
+
+      lightbox.style.display = 'none';
+      content.innerHTML = '';
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        closeLightbox();
+        closeSettings();
+      }
+    });
+
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Boot
     // ─────────────────────────────────────────────────────────────────────────
 
     goBoards();
