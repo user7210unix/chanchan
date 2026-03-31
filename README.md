@@ -1,4 +1,4 @@
-# 4chan Reader (Simple HTML)
+# [4chan Reader](https://user7210unix.github.io/chanchan/)
 
 A lightweight single-file **4chan board / catalog / thread reader** written in plain HTML + CSS + JavaScript.
 
