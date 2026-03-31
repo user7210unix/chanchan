@@ -674,8 +674,11 @@
       boards:  ()                   => PROXY + encodeURIComponent(`${API}/boards.json`),
       catalog: (board)              => PROXY + encodeURIComponent(`${API}/${board}/catalog.json`),
       thread:  (board, no)          => PROXY + encodeURIComponent(`${API}/${board}/thread/${no}.json`),
-      thumb:   (board, tim)         => `${CDN}/${board}/${tim}s.jpg`,
-      image:   (board, tim, ext)    => `${CDN}/${board}/${tim}${ext}`,
+      thumb: (board, tim) =>
+        PROXY + encodeURIComponent(`${CDN}/${board}/${tim}s.jpg`),
+
+      image: (board, tim, ext) =>
+        PROXY + encodeURIComponent(`${CDN}/${board}/${tim}${ext}`),
     };
 
 
