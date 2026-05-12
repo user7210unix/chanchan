@@ -2,7 +2,6 @@
 
 A lightweight single-file **4chan board / catalog / thread reader** written in plain HTML + CSS + JavaScript.
 
-No build tools, no frameworks, no dependencies.
 
 ## Features
 
