@@ -1,1 +1,1362 @@
-;
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>thinline</title>
+
+<!-- Fonts loaded via URL import - never assume the OS has them installed -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+
+<!-- Font Awesome, for the settings gear icon -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+
+<style type="text/css">
+
+/* ============================================================
+   COLOR TOKENS
+   These are overwritten at runtime by colorpalette.js. The
+   values here just match the default fallback palette so
+   there's no flash of unstyled color before JS runs.
+   ============================================================ */
+:root{
+  --c-bg:#fffdf6;
+  --c-bg-alt:#ffe0e9;
+  --c-fg:#262220;
+  --c-fg-muted:#6b6660;
+  --c-accent:#a2d2ff;
+  --c-border:#cdb4db;
+  --c-link:#3a6ea5;
+  --c-quote:#5c8a3a;
+
+  --ui-font:'Plus Jakarta Sans', -apple-system, sans-serif;
+  --hand-font:'Caveat', cursive;
+  --ui-fontsize:14px;
+
+  --sp-1:4px;
+  --sp-2:8px;
+  --sp-3:14px;
+  --sp-4:22px;
+}
+
+/* ============================================================
+   RESET / BASE  -  mobile-first: unprefixed rules target small
+   screens, min-width queries further down layer on enhancements
+   for wider viewports (SELFHTML mobile-first approach)
+   ============================================================ */
+*{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  margin:0;
+  padding:0;
+  font-family:var(--ui-font);
+  font-size:var(--ui-fontsize);
+  background:var(--c-bg);
+  color:var(--c-fg);
+  line-height:1.5;
+  transition:background .15s ease, color .15s ease;
+}
+a{ color:var(--c-link); text-decoration:none; }
+a:hover{ text-decoration:underline; }
+a:visited{ opacity:.85; }
+button, input, select{
+  font-family:var(--ui-font);
+  font-size:calc(var(--ui-fontsize) - 1px);
+  color:var(--c-fg);
+  background:var(--c-bg);
+  border:1px solid var(--c-border);
+  border-radius:0;
+  padding:6px 9px;
+  outline:none;
+}
+button{
+  cursor:pointer;
+  background:var(--c-bg-alt);
+  transition:background .1s ease, opacity .1s ease;
+}
+button:hover{ background:var(--c-accent); }
+button:active{ opacity:.8; }
+input:focus, select:focus, button:focus{ border-color:var(--c-accent); }
+::selection{ background:var(--c-accent); color:var(--c-fg); }
+
+/* ============================================================
+   LAYOUT SHELL
+   ============================================================ */
+#shell{
+  max-width:860px;
+  margin:0 auto;
+  padding:var(--sp-2) var(--sp-3) 40px;
+}
+
+/* handwritten board title */
+#brand{
+  font-family:var(--hand-font);
+  font-size:34px;
+  line-height:1;
+  padding:6px 2px 2px;
+  color:var(--c-fg);
+}
+#brand small{
+  display:block;
+  font-family:var(--ui-font);
+  font-size:11px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--c-fg-muted);
+  margin-top:2px;
+}
+
+#topbar{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:var(--sp-2);
+  margin-bottom:var(--sp-2);
+}
+
+#gearBtn{
+  width:34px;
+  height:34px;
+  padding:0;
+  font-size:16px;
+  line-height:1;
+  flex:0 0 auto;
+  align-self:flex-end;
+}
+
+/* ---- nav row ---- */
+#nav{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:center;
+  padding-bottom:var(--sp-2);
+  margin-bottom:var(--sp-2);
+  border-bottom:1px solid var(--c-border);
+}
+#nav .ac-wrap{ position:relative; }
+#nav input#boardInput{ width:64px; }
+#nav input#threadInput{ width:100px; }
+#nav label{ font-size:12px; color:var(--c-fg-muted); }
+#status{ font-size:12px; color:var(--c-fg-muted); margin-left:auto; }
+
+.ac-list{
+  position:absolute;
+  top:100%; left:0;
+  z-index:30;
+  min-width:220px;
+  max-height:260px;
+  overflow-y:auto;
+  background:var(--c-bg);
+  border:1px solid var(--c-border);
+}
+.ac-list.hidden{ display:none; }
+.ac-item{
+  padding:6px 8px;
+  font-size:12px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.ac-item b{ color:var(--c-fg); }
+.ac-item span{ color:var(--c-fg-muted); margin-left:4px; }
+.ac-item:hover{ background:var(--c-bg-alt); }
+
+/* ---- filters ---- */
+#filters{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:center;
+  font-size:12px;
+  margin-bottom:var(--sp-3);
+  color:var(--c-fg-muted);
+}
+#filters input{ width:104px; }
+
+/* ============================================================
+   SETTINGS PANEL
+   ============================================================ */
+#settings{
+  position:fixed;
+  top:0; right:0;
+  width:100%;
+  height:100%;
+  background:var(--c-bg);
+  z-index:100;
+  overflow-y:auto;
+  padding:var(--sp-4) var(--sp-3);
+  transform:translateX(100%);
+  transition:transform .18s ease;
+}
+#settings.open{ transform:translateX(0); }
+#settings h2{
+  font-family:var(--hand-font);
+  font-size:28px;
+  margin:0 0 var(--sp-3);
+  font-weight:600;
+}
+.set-row{ margin-bottom:var(--sp-4); }
+.set-row label{
+  display:block;
+  font-size:11px;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  color:var(--c-fg-muted);
+  margin-bottom:6px;
+}
+#closeSettings{ float:right; }
+input[type=range]{
+  width:100%;
+  -webkit-appearance:none;
+  height:2px;
+  background:var(--c-border);
+  border:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:14px; height:14px;
+  background:var(--c-accent);
+  border:1px solid var(--c-fg);
+  cursor:pointer;
+}
+input[type=range]::-moz-range-thumb{
+  width:14px; height:14px;
+  background:var(--c-accent);
+  border:1px solid var(--c-fg);
+  cursor:pointer;
+  border-radius:0;
+}
+#fontSizeVal{ font-size:12px; color:var(--c-fg-muted); }
+
+.chk-row{ display:flex; align-items:center; gap:8px; }
+.chk-row input[type=checkbox]{
+  width:16px; height:16px;
+  padding:0;
+  accent-color:var(--c-accent);
+}
+.chk-label{
+  text-transform:none;
+  letter-spacing:0;
+  font-size:13px;
+  color:var(--c-fg);
+  margin:0;
+}
+
+/* palette combobox */
+.combo{ position:relative; }
+.combo-toggle{
+  width:100%;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  justify-content:flex-start;
+}
+.swatch-row{ display:inline-flex; }
+.swatch-row i{
+  display:inline-block;
+  width:14px; height:14px;
+  border:1px solid rgba(0,0,0,.15);
+}
+.combo-menu{
+  margin-top:6px;
+  border:1px solid var(--c-border);
+}
+.combo-menu.hidden{ display:none; }
+.combo-tabs{ display:flex; flex-wrap:wrap; }
+.combo-tabs button{
+  flex:1 1 auto;
+  min-width:44px;
+  border:none;
+  border-bottom:1px solid var(--c-border);
+  background:var(--c-bg);
+  font-size:11px;
+  padding:6px 4px;
+}
+.combo-tabs button.active{ background:var(--c-accent); }
+.palette-list{
+  max-height:260px;
+  overflow-y:auto;
+}
+.palette-row{
+  display:flex;
+  cursor:pointer;
+  height:38px;
+}
+.palette-row:hover{ outline:2px solid var(--c-accent); outline-offset:-2px; }
+.palette-row.selected{ outline:2px solid var(--c-fg); outline-offset:-2px; }
+.palette-row i{ flex:1; display:block; }
+.combo-loading{
+  text-align:center;
+  font-size:11px;
+  color:var(--c-fg-muted);
+  padding:8px;
+}
+.combo-loading.hidden{ display:none; }
+
+.font-list{
+  max-height:260px;
+  overflow-y:auto;
+}
+.font-row{
+  padding:9px 10px;
+  cursor:pointer;
+  font-size:16px;
+  border-bottom:1px solid var(--c-border);
+}
+.font-row:last-child{ border-bottom:none; }
+.font-row span{
+  display:block;
+  font-size:10px;
+  font-family:var(--ui-font);
+  color:var(--c-fg-muted);
+  margin-top:2px;
+}
+.font-row:hover{ background:var(--c-bg-alt); }
+.font-row.selected{ background:var(--c-accent); }
+
+/* ============================================================
+   CONTENT
+   ============================================================ */
+.thread-item{
+  padding:8px 0;
+  border-bottom:1px solid var(--c-border);
+}
+.thread-item:hover{ background:var(--c-bg-alt); }
+.post{ padding:6px 0; }
+.post-header{ font-size:12px; color:var(--c-fg-muted); }
+.post-no{ font-weight:600; color:var(--c-fg); }
+.post-sub{ font-weight:600; margin:3px 0 4px; }
+.post-com{ margin-top:4px; }
+.file-info{ font-size:11px; color:var(--c-fg-muted); }
+body.hide-md5 .md5{ display:none; }
+.tree-indent{
+  border-left:1px solid var(--c-border);
+  margin-left:10px;
+  padding-left:10px;
+}
+.quote{ color:var(--c-quote); font-style:italic; }
+.error{ color:#c0392b; margin:6px 0; font-size:13px; }
+
+img.media, video.media{
+  max-width:220px;
+  max-height:220px;
+  border:1px solid var(--c-border);
+  display:block;
+  margin:4px 0;
+  cursor:zoom-in;
+  transition:opacity .1s ease;
+}
+img.media:hover, video.media:hover{ opacity:.85; }
+img.media.full, video.media.full{ max-width:100%; max-height:none; cursor:zoom-out; }
+
+/* ---- modeline ---- */
+#modeline{
+  position:fixed;
+  bottom:0; left:0;
+  width:100%;
+  height:22px;
+  line-height:22px;
+  background:var(--c-bg-alt);
+  border-top:1px solid var(--c-border);
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px;
+  padding-left:6px;
+  white-space:nowrap;
+  overflow:hidden;
+  color:var(--c-fg-muted);
+}
+
+/* ============================================================
+   MOBILE-FIRST ENHANCEMENTS  (>=700px)
+   ============================================================ */
+@media (min-width:700px){
+  #shell{ padding-top:var(--sp-3); }
+  #brand{ font-size:44px; }
+  #nav{ flex-wrap:nowrap; }
+  #filters{ flex-wrap:nowrap; }
+  #settings{ width:340px; left:auto; }
+  img.media, video.media{ max-width:260px; max-height:260px; }
+}
+</style>
+</head>
+<body>
+
+<div id="shell">
+
+  <div id="topbar">
+    <div id="brand">thinline<small id="brandSub">/ - /</small></div>
+    <button type="button" id="gearBtn" title="settings"><i class="fa-solid fa-gears"></i></button>
+  </div>
+
+  <div id="nav">
+    <div class="ac-wrap">
+      <input type="text" id="boardInput" value="a" size="3" autocomplete="off">
+      <div id="boardAC" class="ac-list hidden"></div>
+    </div>
+    <button type="button" id="btnCatalog">Catalog</button>
+    <label>thread</label>
+    <input type="text" id="threadInput" size="9">
+    <button type="button" id="btnThread">Load</button>
+    <button type="button" id="btnBack">Back</button>
+    <span id="status"></span>
+  </div>
+
+  <div id="filters">
+    <span>filter</span>
+    <input type="text" id="fName" placeholder="name">
+    <input type="text" id="fTrip" placeholder="trip">
+    <input type="text" id="fSub" placeholder="sub">
+    <input type="text" id="fCom" placeholder="com">
+    <button type="button" id="btnFilter">Apply</button>
+    <button type="button" id="btnClearFilter">Clear</button>
+  </div>
+
+  <div id="content"></div>
+</div>
+
+<div id="modeline"></div>
+
+<!-- ============================================================
+     SETTINGS PANEL
+     ============================================================ -->
+<div id="settings">
+  <button type="button" id="closeSettings">close</button>
+  <h2>settings</h2>
+
+  <div class="set-row">
+    <label>font size (<span id="fontSizeVal">14</span>px)</label>
+    <input type="range" id="fontSizeSlider" min="11" max="20" step="1" value="14">
+  </div>
+
+  <div class="set-row">
+    <label>ui font</label>
+    <div class="combo" id="fontBox">
+      <button type="button" class="combo-toggle" id="fontToggle">
+        <span id="curFontLabel">choose a font</span>
+      </button>
+      <div class="combo-menu hidden" id="fontMenu">
+        <div class="combo-tabs" id="fontTabs">
+          <button type="button" data-cat="sans" class="tab active">Sans</button>
+          <button type="button" data-cat="serif" class="tab">Serif</button>
+          <button type="button" data-cat="mono" class="tab">Mono</button>
+          <button type="button" data-cat="hand" class="tab">Hand</button>
+          <button type="button" data-cat="display" class="tab">Display</button>
+          <button type="button" data-cat="system" class="tab">System</button>
+        </div>
+        <div class="font-list" id="fontList"></div>
+        <div class="combo-loading hidden" id="fontLoading">loading more fonts&#8230;</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="set-row">
+    <label>color palette</label>
+    <div class="combo" id="paletteBox">
+      <button type="button" class="combo-toggle" id="paletteToggle">
+        <span class="swatch-row" id="curSwatch"></span>
+        <span id="curLabel">choose a palette</span>
+      </button>
+      <div class="combo-menu hidden" id="paletteMenu">
+        <div class="combo-tabs">
+          <button type="button" data-theme="pastel" class="tab active">Pastel</button>
+          <button type="button" data-theme="dark" class="tab">Dark</button>
+        </div>
+        <div class="palette-list" id="paletteList"></div>
+        <div class="combo-loading hidden" id="paletteLoading">loading more palettes&#8230;</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="set-row">
+    <label>files</label>
+    <div class="chk-row">
+      <input type="checkbox" id="hideMd5Chk">
+      <label for="hideMd5Chk" class="chk-label">hide MD5 hashes</label>
+    </div>
+  </div>
+
+  <div class="set-row">
+    <label>cache</label>
+    <button type="button" id="btnClearCache">clear cached data</button>
+  </div>
+</div>
+
+<script type="text/javascript" src="colorpalette.js"></script>
+<script type="text/javascript" src="fontloader.js"></script>
+<script type="text/javascript">
+var PROXY = "https://chan-proxy.anonnousmes.workers.dev/?url=";
+var API = "https://a.4cdn.org/";
+var IMG = "https://i.4cdn.org/";
+var REQ = 0;
+var BOARD = "";
+var THREAD = 0;
+var HIST = [];
+var T0 = new Date().getTime();
+var F_NAME = "";
+var F_TRIP = "";
+var F_SUB = "";
+var F_COM = "";
+var BOARDS = [];        // [{board,title}]
+var BOARDS_MAP = {};
+
+if (!window.JSON) {
+  window.JSON = { parse: function(s) { return eval("(" + s + ")"); } };
+}
+if (!Array.prototype.indexOf) {
+  Array.prototype.indexOf = function(x, i) {
+    i = i || 0;
+    for (; i < this.length; i++) if (this[i] === x) return i;
+    return -1;
+  };
+}
+if (!String.prototype.trim) {
+  String.prototype.trim = function() { return this.replace(/^\s+|\s+$/g, ""); };
+}
+
+function px(u) { return PROXY + encodeURIComponent(u); }
+
+function status(m) {
+  var e = document.getElementById("status");
+  if (e) e.innerHTML = m || "";
+}
+
+function modeline(t) {
+  var e = document.getElementById("modeline");
+  if (e) e.innerHTML = t;
+}
+
+function tick() {
+  var d = new Date();
+  var tm = (d.getHours() < 10 ? "0" : "") + d.getHours() + ":" +
+           (d.getMinutes() < 10 ? "0" : "") + d.getMinutes() + ":" +
+           (d.getSeconds() < 10 ? "0" : "") + d.getSeconds();
+  var dt = (d.getMonth() + 1) + "/" + d.getDate() + "/" + (d.getFullYear() % 100);
+  var mem = "n/a";
+  try {
+    if (window.performance && performance.memory) {
+      mem = Math.floor(performance.memory.usedJSHeapSize / 1048576) + "M";
+    }
+  } catch (e) {}
+  var loc = BOARD ? ("/" + BOARD + "/" + (THREAD || "cat")) : "-";
+  var up = Math.floor((new Date().getTime() - T0) / 1000);
+  modeline(loc + " -- " + dt + " " + tm + " -- mem:" + mem + " -- req:" + REQ + " -- " + up + "s --");
+}
+
+function clear() {
+  var c = document.getElementById("content");
+  if (c) c.innerHTML = "";
+}
+
+function add(h) {
+  var c = document.getElementById("content");
+  if (c) c.innerHTML += h;
+}
+
+/* ============================================================
+   low level transport
+   ============================================================ */
+function get(url, ok, err) {
+  REQ++;
+  var x;
+  if (window.XMLHttpRequest) x = new XMLHttpRequest();
+  else try { x = new ActiveXObject("Microsoft.XMLHTTP"); } catch (e) { if (err) err("no xhr"); return; }
+  x.open("GET", px(url), true);
+  x.onreadystatechange = function () {
+    if (x.readyState == 4) {
+      if (x.status >= 200 && x.status < 300) { if (ok) ok(x.responseText); }
+      else if (err) err("http " + x.status);
+    }
+  };
+  try { x.send(null); } catch (e) { if (err) err("fail"); }
+}
+
+function getj(url, ok, err) {
+  get(url, function(t) {
+    try { ok(JSON.parse(t)); } catch (e) { if (err) err("json"); }
+  }, err);
+}
+
+/* ============================================================
+   SMART CACHE  (stale-while-revalidate)
+   Every resource gets its own freshness/staleness budget:
+   fresh   -> serve cache, skip network entirely
+   stale   -> serve cache immediately, refresh in background
+   expired -> hit network, fall back to old cache on failure
+   ============================================================ */
+var SC_KEY = "sc_cache_v1";
+
+function scAll() {
+  try { return JSON.parse(localStorage.getItem(SC_KEY) || "{}"); }
+  catch (e) { return {}; }
+}
+function scSave(all) {
+  try { localStorage.setItem(SC_KEY, JSON.stringify(all)); } catch (e) {}
+}
+function scRead(key) { return scAll()[key] || null; }
+function scWrite(key, data) {
+  var all = scAll();
+  all[key] = { t: new Date().getTime(), data: data };
+  var keys = [];
+  for (var k in all) if (all.hasOwnProperty(k)) keys.push(k);
+  if (keys.length > 60) {
+    keys.sort(function (a, b) { return all[a].t - all[b].t; });
+    delete all[keys[0]];
+  }
+  scSave(all);
+}
+function scClear() { try { localStorage.removeItem(SC_KEY); } catch (e) {} }
+
+function scFetch(key, ttlFresh, ttlStale, loader, onData) {
+  var entry = scRead(key);
+  var now = new Date().getTime();
+  if (entry && (now - entry.t) < ttlFresh) {
+    onData(entry.data, true);
+    return;
+  }
+  if (entry && (now - entry.t) < ttlStale) {
+    onData(entry.data, true);
+    loader(function (data) { scWrite(key, data); onData(data, false); }, function () {});
+    return;
+  }
+  loader(function (data) { scWrite(key, data); onData(data, false); }, function (e) {
+    if (entry) onData(entry.data, true);
+    else onData(null, false, e);
+  });
+}
+
+/* ============================================================
+   filters
+   ============================================================ */
+function loadFilters() {
+  try {
+    if (window.localStorage) {
+      F_NAME = localStorage.getItem("f_name") || "";
+      F_TRIP = localStorage.getItem("f_trip") || "";
+      F_SUB = localStorage.getItem("f_sub") || "";
+      F_COM = localStorage.getItem("f_com") || "";
+      var n = document.getElementById("fName");
+      var t = document.getElementById("fTrip");
+      var s = document.getElementById("fSub");
+      var c = document.getElementById("fCom");
+      if (n) n.value = F_NAME;
+      if (t) t.value = F_TRIP;
+      if (s) s.value = F_SUB;
+      if (c) c.value = F_COM;
+    }
+  } catch (e) {}
+}
+
+function saveFilters() {
+  try {
+    if (window.localStorage) {
+      localStorage.setItem("f_name", F_NAME);
+      localStorage.setItem("f_trip", F_TRIP);
+      localStorage.setItem("f_sub", F_SUB);
+      localStorage.setItem("f_com", F_COM);
+    }
+  } catch (e) {}
+}
+
+function applyFilters() {
+  var n = document.getElementById("fName");
+  var t = document.getElementById("fTrip");
+  var s = document.getElementById("fSub");
+  var c = document.getElementById("fCom");
+  F_NAME = n ? n.value.trim() : "";
+  F_TRIP = t ? t.value.trim() : "";
+  F_SUB = s ? s.value.trim() : "";
+  F_COM = c ? c.value.trim() : "";
+  saveFilters();
+  if (BOARD && THREAD) loadThread(BOARD, THREAD);
+  else if (BOARD) loadCatalog(BOARD);
+}
+
+function clearFilters() {
+  F_NAME = F_TRIP = F_SUB = F_COM = "";
+  var n = document.getElementById("fName");
+  var t = document.getElementById("fTrip");
+  var s = document.getElementById("fSub");
+  var c = document.getElementById("fCom");
+  if (n) n.value = "";
+  if (t) t.value = "";
+  if (s) s.value = "";
+  if (c) c.value = "";
+  saveFilters();
+  if (BOARD && THREAD) loadThread(BOARD, THREAD);
+  else if (BOARD) loadCatalog(BOARD);
+}
+
+function matchFilter(post) {
+  try {
+    if (F_NAME && !(post.name || "").match(new RegExp(F_NAME, "i"))) return false;
+    if (F_TRIP && !(post.trip || "").match(new RegExp(F_TRIP, "i"))) return false;
+    if (F_SUB && !(post.sub || "").match(new RegExp(F_SUB, "i"))) return false;
+    if (F_COM && !(post.com || "").match(new RegExp(F_COM, "i"))) return false;
+  } catch (e) {
+    return true;
+  }
+  return true;
+}
+
+/* ============================================================
+   boards list + autosuggest
+   ============================================================ */
+function loadBoards() {
+  scFetch("boards", 1000 * 60 * 60 * 24, 1000 * 60 * 60 * 24 * 7, function (ok, err) {
+    getj(API + "boards.json", function (d) {
+      if (d && d.boards) ok(d.boards.map(function (b) {
+        return { board: b.board, title: b.title };
+      }));
+      else err("bad boards");
+    }, err);
+  }, function (data) {
+    if (data) {
+      BOARDS = data;
+      BOARDS_MAP = {};
+      for (var i = 0; i < data.length; i++) BOARDS_MAP[data[i].board] = data[i].title;
+      updateBrand();
+    }
+  });
+}
+
+function updateBrand() {
+  var e = document.getElementById("brandSub");
+  if (!e) return;
+  if (BOARD && BOARDS_MAP[BOARD]) e.innerHTML = "/" + BOARD + "/ - " + esc(BOARDS_MAP[BOARD]);
+  else if (BOARD) e.innerHTML = "/" + BOARD + "/";
+  else e.innerHTML = "/ - /";
+}
+
+function initAutosuggest() {
+  var input = document.getElementById("boardInput");
+  var list = document.getElementById("boardAC");
+  if (!input || !list) return;
+
+  function render(matches) {
+    if (!matches.length) { list.className = "ac-list hidden"; return; }
+    var h = "";
+    for (var i = 0; i < matches.length && i < 8; i++) {
+      h += "<div class='ac-item' data-b='" + matches[i].board + "'>" +
+           "<b>/" + matches[i].board + "/</b><span>" + esc(matches[i].title) + "</span></div>";
+    }
+    list.innerHTML = h;
+    list.className = "ac-list";
+    var items = list.getElementsByClassName("ac-item");
+    for (var j = 0; j < items.length; j++) {
+      items[j].onclick = (function (b) {
+        return function () {
+          input.value = b;
+          list.className = "ac-list hidden";
+          loadCatalog(b);
+        };
+      })(items[j].getAttribute("data-b"));
+    }
+  }
+
+  input.oninput = function () {
+    var v = input.value.trim().toLowerCase();
+    if (!v || !BOARDS.length) { list.className = "ac-list hidden"; return; }
+    var m = [];
+    for (var i = 0; i < BOARDS.length; i++) {
+      var bd = BOARDS[i];
+      if (bd.board.indexOf(v) === 0 || bd.title.toLowerCase().indexOf(v) >= 0) m.push(bd);
+    }
+    render(m);
+  };
+  document.addEventListener("click", function (e) {
+    if (e.target !== input) list.className = "ac-list hidden";
+  });
+}
+
+/* ============================================================
+   catalog / thread
+   ============================================================ */
+function loadCatalog(b) {
+  b = (b || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (!b) { status("board?"); return; }
+  BOARD = b;
+  THREAD = 0;
+  HIST.push({t: "c", b: b});
+  clear();
+  status("loading...");
+  updateBrand();
+  scFetch("catalog:" + b, 1000 * 30, 1000 * 60 * 10, function (ok, err) {
+    getj(API + b + "/catalog.json", ok, err);
+  }, function (d, stale, err) {
+    if (err) { status(err); add("<div class='error'>" + err + "</div>"); return; }
+    status(stale ? "(cached)" : "");
+    clear();
+    showCatalog(b, d);
+  });
+}
+
+function showCatalog(b, pages) {
+  var h = "<b>/" + b + "/</b><br>";
+  if (!pages) { add(h + "<div class='error'>empty</div>"); return; }
+  for (var i = 0; i < pages.length; i++) {
+    var pg = pages[i];
+    if (!pg.threads) continue;
+    for (var j = 0; j < pg.threads.length; j++) {
+      var th = pg.threads[j];
+      if (!matchFilter(th)) continue;
+      h += catItem(b, th);
+    }
+  }
+  add(h);
+  bindCat();
+}
+
+function catItem(b, th) {
+  var sub = th.sub || "";
+  var com = strip(th.com || "").substring(0, 100);
+  var h = "<div class='thread-item'>";
+  h += "<a href='#' class='tl' data-b='" + b + "' data-n='" + th.no + "'>No." + th.no + "</a> ";
+  h += "<b>" + esc(sub) + "</b> R:" + (th.replies || 0) + " I:" + (th.images || 0) + "<br>";
+  if (th.tim) {
+    h += "<img src='" + px(IMG + b + "/" + th.tim + "s.jpg") + "' width='" + (th.tn_w || 40) + "' height='" + (th.tn_h || 40) + "'>";
+  }
+  h += esc(com) + (com.length >= 100 ? ".." : "");
+  h += "</div>";
+  return h;
+}
+
+function bindCat() {
+  var as = document.getElementsByTagName("a");
+  for (var i = 0; i < as.length; i++) {
+    if (as[i].className == "tl") {
+      as[i].onclick = (function(bb, nn) {
+        return function() { loadThread(bb, nn); return false; };
+      })(as[i].getAttribute("data-b"), as[i].getAttribute("data-n"));
+    }
+  }
+}
+
+function loadThread(b, n) {
+  b = (b || BOARD || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  n = parseInt(n, 10);
+  if (!b || !n) { status("need board+no"); return; }
+  BOARD = b;
+  THREAD = n;
+  HIST.push({t: "t", b: b, n: n});
+  clear();
+  status("loading " + n);
+  updateBrand();
+  scFetch("thread:" + b + ":" + n, 1000 * 15, 1000 * 60 * 5, function (ok, err) {
+    getj(API + b + "/thread/" + n + ".json", function (d) {
+      if (!d || !d.posts) { err("no posts"); return; }
+      ok(d.posts);
+    }, err);
+  }, function (posts, stale, err) {
+    if (err) { status(err); add("<div class='error'>" + err + "</div>"); return; }
+    status(stale ? "(cached)" : "");
+    clear();
+    showThread(b, posts);
+  });
+}
+
+function quotes(com) {
+  var r = [];
+  if (!com) return r;
+  var m, re = /&gt;&gt;(\d+)/g;
+  while ((m = re.exec(com)) != null) {
+    var v = parseInt(m[1], 10);
+    if (r.indexOf(v) < 0) r.push(v);
+  }
+  re = /#p(\d+)/g;
+  while ((m = re.exec(com)) != null) {
+    var v2 = parseInt(m[1], 10);
+    if (r.indexOf(v2) < 0) r.push(v2);
+  }
+  return r;
+}
+
+function buildMap(posts) {
+  var map = {}, by = {};
+  for (var i = 0; i < posts.length; i++) {
+    by[posts[i].no] = posts[i];
+    map[posts[i].no] = [];
+  }
+  for (var i = 0; i < posts.length; i++) {
+    var p = posts[i];
+    var qs = quotes(p.com || "");
+    var par = null;
+    for (var k = 0; k < qs.length; k++) {
+      if (by[qs[k]] && qs[k] != p.no) { par = qs[k]; break; }
+    }
+    if (par != null) map[par].push(p);
+    else if (p.resto && by[p.resto]) map[p.resto].push(p);
+  }
+  return {map: map, by: by};
+}
+
+function showThread(b, posts) {
+  var op = posts[0];
+  var bm = buildMap(posts);
+  var h = "<b>/" + b + "/ No." + op.no + "</b><br>";
+  if (matchFilter(op)) h += postHtml(b, op, true);
+  var kids = bm.map[op.no] || [];
+  var seen = {};
+  seen[op.no] = 1;
+  h += kidsHtml(b, kids, bm.map, seen);
+  for (var i = 1; i < posts.length; i++) {
+    var p = posts[i];
+    if (seen[p.no]) continue;
+    if (!matchFilter(p)) continue;
+    h += postHtml(b, p, false);
+    seen[p.no] = 1;
+    var ch = bm.map[p.no] || [];
+    h += kidsHtml(b, ch, bm.map, seen);
+  }
+  add(h);
+  bindImgs();
+}
+
+function kidsHtml(b, list, map, seen) {
+  var h = "";
+  for (var i = 0; i < list.length; i++) {
+    var p = list[i];
+    if (seen[p.no]) continue;
+    if (!matchFilter(p)) continue;
+    seen[p.no] = 1;
+    h += "<div class='tree-indent'>";
+    h += postHtml(b, p, false);
+    h += kidsHtml(b, map[p.no] || [], map, seen);
+    h += "</div>";
+  }
+  return h;
+}
+
+function postHtml(b, p, isop) {
+  var h = "<div class='post' id='p" + p.no + "'>";
+  h += "<div class='post-header'><span class='post-no'>No." + p.no + "</span> ";
+  h += esc(p.name || "Anonymous");
+  if (p.trip) h += " " + esc(p.trip);
+  h += " " + (p.now || "");
+  h += "</div>";
+  if (isop && p.sub) h += "<div class='post-sub'>" + esc(p.sub) + "</div>";
+  if (p.filename && p.ext && p.tim) h += fileHtml(b, p);
+  var c = p.com || "";
+  c = c.replace(/class="quotelink"/g, 'class="quote"');
+  h += "<div class='post-com'>" + c + "</div></div>";
+  return h;
+}
+
+function fileHtml(b, p) {
+  var u = IMG + b + "/" + p.tim + p.ext;
+  var pu = px(u);
+  var vid = (p.ext == ".webm" || p.ext == ".mp4");
+  var h = "<div class='file-info'>";
+  h += esc(p.filename + p.ext) + " (" + size(p.fsize) + ", " + (p.w || "?") + "x" + (p.h || "?") + ") ";
+  h += "<span class='md5'>MD5:" + (p.md5 || "-") + "</span>";
+  h += "</div>";
+  if (vid) {
+    h += "<video controls width='250' class='media' src='" + pu + "'></video>";
+  } else {
+    h += "<img class='media' src='" + pu + "' alt=''>";
+  }
+  return h;
+}
+
+function bindImgs() {
+  var imgs = document.getElementsByTagName("img");
+  for (var i = 0; i < imgs.length; i++) {
+    if (imgs[i].className && imgs[i].className.indexOf("media") >= 0) {
+      imgs[i].onclick = function() {
+        if (this.className.indexOf("full") >= 0) {
+          this.className = "media";
+        } else {
+          this.className = "media full";
+        }
+      };
+    }
+  }
+  var vids = document.getElementsByTagName("video");
+  for (var i = 0; i < vids.length; i++) {
+    if (vids[i].className && vids[i].className.indexOf("media") >= 0) {
+      vids[i].onclick = function() {
+        if (this.className.indexOf("full") >= 0) {
+          this.className = "media";
+        } else {
+          this.className = "media full";
+        }
+      };
+    }
+  }
+}
+
+function size(b) {
+  if (!b) return "0";
+  if (b < 1024) return b + "B";
+  if (b < 1048576) return Math.floor(b / 1024) + "K";
+  return Math.floor(b / 1048576) + "M";
+}
+
+function esc(s) {
+  if (!s) return "";
+  return ("" + s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function strip(s) {
+  if (!s) return "";
+  return ("" + s).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function back() {
+  if (HIST.length < 2) { status("end"); return; }
+  HIST.pop();
+  var p = HIST[HIST.length - 1];
+  if (!p) return;
+  if (p.t == "c") loadCatalog(p.b);
+  else loadThread(p.b, p.n);
+}
+
+/* ============================================================
+   SETTINGS PANEL  (font size / font family / palette combobox)
+   ============================================================ */
+function applyFontFamily(family) {
+  FontLoader.applyFont(family);
+  var lbl = document.getElementById("curFontLabel");
+  if (lbl) lbl.innerHTML = family;
+}
+
+function applyFontSize(px_) {
+  document.documentElement.style.setProperty("--ui-fontsize", px_ + "px");
+  var lbl = document.getElementById("fontSizeVal");
+  if (lbl) lbl.innerHTML = px_;
+  var sl = document.getElementById("fontSizeSlider");
+  if (sl) sl.value = px_;
+}
+
+function loadHideMd5() {
+  try { return localStorage.getItem("hide_md5") === "1"; } catch (e) { return false; }
+}
+function saveHideMd5(v) {
+  try { localStorage.setItem("hide_md5", v ? "1" : "0"); } catch (e) {}
+}
+function applyHideMd5(v) {
+  document.body.className = v ? "hide-md5" : "";
+}
+
+function initSettingsPanel() {
+  var gear = document.getElementById("gearBtn");
+  var panel = document.getElementById("settings");
+  var closeBtn = document.getElementById("closeSettings");
+  if (gear) gear.onclick = function () { panel.className = "open"; };
+  if (closeBtn) closeBtn.onclick = function () { panel.className = ""; };
+
+  applyFontSize(FontLoader.loadSize());
+  var savedFontChoice = FontLoader.loadChoice();
+  applyFontFamily(savedFontChoice && savedFontChoice.family ? savedFontChoice.family : "Plus Jakarta Sans");
+
+  var hideMd5 = loadHideMd5();
+  applyHideMd5(hideMd5);
+  var md5Chk = document.getElementById("hideMd5Chk");
+  if (md5Chk) {
+    md5Chk.checked = hideMd5;
+    md5Chk.onchange = function () {
+      applyHideMd5(this.checked);
+      saveHideMd5(this.checked);
+    };
+  }
+
+  var slider = document.getElementById("fontSizeSlider");
+  if (slider) slider.oninput = function () {
+    applyFontSize(this.value);
+    FontLoader.saveSize(parseInt(this.value, 10));
+  };
+
+  var clearCacheBtn = document.getElementById("btnClearCache");
+  if (clearCacheBtn) clearCacheBtn.onclick = function () {
+    scClear();
+    status("cache cleared");
+  };
+}
+
+/* ---- palette combobox ---- */
+var PAL_STATE = { theme: "pastel", page: 0, loading: false, done: false };
+
+function swatchHtml(colors) {
+  var h = "";
+  for (var i = 0; i < colors.length; i++) h += "<i style='background:#" + colors[i] + "'></i>";
+  return h;
+}
+
+function selectPalette(colors, rowEl) {
+  ColorPaletteManager.applyPalette(colors);
+  ColorPaletteManager.saveChoice(colors, PAL_STATE.theme);
+  document.getElementById("curSwatch").innerHTML = swatchHtml(colors);
+  document.getElementById("curLabel").innerHTML = "#" + colors.join(" #");
+  var rows = document.getElementsByClassName("palette-row");
+  for (var i = 0; i < rows.length; i++) rows[i].className = "palette-row";
+  if (rowEl) rowEl.className = "palette-row selected";
+}
+
+var PAL_SENTINEL = null;
+var PAL_OBSERVER = null;
+var PAL_MAX_AUTOLOAD = 40; // hard stop so a broken observer can't loop forever
+
+function ensureSentinel(wrap) {
+  if (!PAL_SENTINEL) {
+    PAL_SENTINEL = document.createElement("div");
+    PAL_SENTINEL.id = "paletteSentinel";
+    PAL_SENTINEL.style.height = "1px";
+    if (PAL_OBSERVER) PAL_OBSERVER.observe(PAL_SENTINEL);
+  }
+  wrap.appendChild(PAL_SENTINEL); // always keep it as the last row
+}
+
+function appendPaletteRows(list) {
+  var wrap = document.getElementById("paletteList");
+  var savedChoice = ColorPaletteManager.loadChoice();
+  for (var i = 0; i < list.length; i++) {
+    (function (colors) {
+      var row = document.createElement("div");
+      row.className = "palette-row";
+      row.innerHTML = swatchHtml(colors);
+      if (savedChoice && savedChoice.colors && savedChoice.colors.join(",") === colors.join(",")) {
+        row.className = "palette-row selected";
+      }
+      row.onclick = function () { selectPalette(colors, row); };
+      wrap.insertBefore(row, PAL_SENTINEL);
+    })(list[i]);
+  }
+  ensureSentinel(wrap);
+}
+
+function loadMorePalettes() {
+  if (PAL_STATE.loading || PAL_STATE.page > PAL_MAX_AUTOLOAD) return;
+  PAL_STATE.loading = true;
+  var loading = document.getElementById("paletteLoading");
+  if (loading) loading.className = "combo-loading";
+  ColorPaletteManager.fetchPage(PAL_STATE.theme, PAL_STATE.page, function (list) {
+    appendPaletteRows(list);
+    PAL_STATE.page++;
+    PAL_STATE.loading = false;
+    if (loading) loading.className = "combo-loading hidden";
+    // if the sentinel is still inside the visible area after this batch
+    // (dropdown not scrollable yet), load another batch immediately
+    var wrap = document.getElementById("paletteList");
+    if (wrap && PAL_SENTINEL && wrap.scrollHeight <= wrap.clientHeight + 4) {
+      loadMorePalettes();
+    }
+  });
+}
+
+function resetPaletteList() {
+  var wrap = document.getElementById("paletteList");
+  wrap.innerHTML = "";
+  PAL_SENTINEL = null;
+  PAL_STATE.page = 0;
+  loadMorePalettes();
+}
+
+function initPaletteCombo() {
+  var toggle = document.getElementById("paletteToggle");
+  var menu = document.getElementById("paletteMenu");
+  var listEl = document.getElementById("paletteList");
+  var tabs = menu.querySelectorAll(".combo-tabs button");
+
+  if (toggle) toggle.onclick = function () {
+    var open = menu.className.indexOf("hidden") < 0;
+    menu.className = open ? "combo-menu hidden" : "combo-menu";
+    if (!open && !listEl.children.length) loadMorePalettes();
+  };
+
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].onclick = function () {
+      for (var j = 0; j < tabs.length; j++) tabs[j].className = "tab";
+      this.className = "tab active";
+      PAL_STATE.theme = this.getAttribute("data-theme");
+      resetPaletteList();
+    };
+  }
+
+  // Primary mechanism: IntersectionObserver watches a 1px sentinel that
+  // always sits at the bottom of the list. As soon as it becomes visible
+  // inside the scroll box - whether that's because the box was too short
+  // to scroll yet, or because the user scrolled down to it - we load the
+  // next 4 palettes.
+  if (listEl && window.IntersectionObserver) {
+    PAL_OBSERVER = new IntersectionObserver(function (entries) {
+      if (entries[0].isIntersecting) loadMorePalettes();
+    }, { root: listEl, rootMargin: "60px", threshold: 0 });
+  }
+
+  // Fallback for browsers without IntersectionObserver
+  if (listEl) listEl.onscroll = function () {
+    if (listEl.scrollTop + listEl.clientHeight >= listEl.scrollHeight - 30) loadMorePalettes();
+  };
+
+  var saved = ColorPaletteManager.loadChoice();
+  if (saved && saved.colors) {
+    document.getElementById("curSwatch").innerHTML = swatchHtml(saved.colors);
+    document.getElementById("curLabel").innerHTML = "#" + saved.colors.join(" #");
+    if (saved.theme) {
+      PAL_STATE.theme = saved.theme;
+      for (var k = 0; k < tabs.length; k++) {
+        tabs[k].className = tabs[k].getAttribute("data-theme") === saved.theme ? "tab active" : "tab";
+      }
+    }
+  }
+}
+
+/* ---- font combobox ---- */
+var FONT_STATE = { cat: "sans", page: 0, loading: false };
+var FONT_SENTINEL = null;
+var FONT_OBSERVER = null;
+var FONT_MAX_AUTOLOAD = 40;
+
+function ensureFontSentinel(wrap) {
+  if (!FONT_SENTINEL) {
+    FONT_SENTINEL = document.createElement("div");
+    FONT_SENTINEL.id = "fontSentinel";
+    FONT_SENTINEL.style.height = "1px";
+    if (FONT_OBSERVER) FONT_OBSERVER.observe(FONT_SENTINEL);
+  }
+  wrap.appendChild(FONT_SENTINEL);
+}
+
+function selectFont(family, rowEl) {
+  applyFontFamily(family);
+  FontLoader.saveChoice(family);
+  var rows = document.getElementsByClassName("font-row");
+  for (var i = 0; i < rows.length; i++) rows[i].className = "font-row";
+  if (rowEl) rowEl.className = "font-row selected";
+}
+
+function appendFontRows(list) {
+  var wrap = document.getElementById("fontList");
+  var saved = FontLoader.loadChoice();
+  for (var i = 0; i < list.length; i++) {
+    (function (family) {
+      var row = document.createElement("div");
+      row.className = "font-row";
+      row.innerHTML = esc(family) + "<span>Ag Bb Cc 123</span>";
+      if (saved && saved.family === family) row.className = "font-row selected";
+      row.onclick = function () { selectFont(family, row); };
+      wrap.insertBefore(row, FONT_SENTINEL);
+      // lazily load the actual webfont just for this preview row -
+      // this is the "dynamic" part: nothing is fetched until a row
+      // is actually about to be shown
+      if (FONT_STATE.cat !== "system") {
+        row.getElementsByTagName("span")[0].style.fontFamily = "'" + family + "'";
+        FontLoader.ensureLoaded(family);
+      }
+    })(list[i]);
+  }
+  ensureFontSentinel(wrap);
+}
+
+function loadMoreFonts() {
+  if (FONT_STATE.loading || FONT_STATE.page > FONT_MAX_AUTOLOAD) return;
+  FONT_STATE.loading = true;
+  var loading = document.getElementById("fontLoading");
+  if (loading) loading.className = "combo-loading";
+  FontLoader.fetchPage(FONT_STATE.cat, FONT_STATE.page, function (list) {
+    appendFontRows(list);
+    FONT_STATE.page++;
+    FONT_STATE.loading = false;
+    if (loading) loading.className = "combo-loading hidden";
+    var wrap = document.getElementById("fontList");
+    if (wrap && FONT_SENTINEL && wrap.scrollHeight <= wrap.clientHeight + 4) {
+      loadMoreFonts();
+    }
+  });
+}
+
+function resetFontList() {
+  var wrap = document.getElementById("fontList");
+  wrap.innerHTML = "";
+  FONT_SENTINEL = null;
+  FONT_STATE.page = 0;
+  loadMoreFonts();
+}
+
+function initFontCombo() {
+  var toggle = document.getElementById("fontToggle");
+  var menu = document.getElementById("fontMenu");
+  var listEl = document.getElementById("fontList");
+  var tabs = menu.querySelectorAll(".combo-tabs button");
+
+  if (toggle) toggle.onclick = function () {
+    var open = menu.className.indexOf("hidden") < 0;
+    menu.className = open ? "combo-menu hidden" : "combo-menu";
+    if (!open && !listEl.children.length) loadMoreFonts();
+  };
+
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].onclick = function () {
+      for (var j = 0; j < tabs.length; j++) tabs[j].className = "tab";
+      this.className = "tab active";
+      FONT_STATE.cat = this.getAttribute("data-cat");
+      resetFontList();
+    };
+  }
+
+  if (listEl && window.IntersectionObserver) {
+    FONT_OBSERVER = new IntersectionObserver(function (entries) {
+      if (entries[0].isIntersecting) loadMoreFonts();
+    }, { root: listEl, rootMargin: "60px", threshold: 0 });
+  }
+
+  if (listEl) listEl.onscroll = function () {
+    if (listEl.scrollTop + listEl.clientHeight >= listEl.scrollHeight - 30) loadMoreFonts();
+  };
+}
+
+/* ============================================================
+   init
+   ============================================================ */
+function init() {
+  loadFilters();
+  ColorPaletteManager.init();
+  FontLoader.init();
+
+  var bc = document.getElementById("btnCatalog");
+  var bt = document.getElementById("btnThread");
+  var bb = document.getElementById("btnBack");
+  var bf = document.getElementById("btnFilter");
+  var bcf = document.getElementById("btnClearFilter");
+  var bi = document.getElementById("boardInput");
+  var ti = document.getElementById("threadInput");
+  if (bc) bc.onclick = function() { loadCatalog(bi ? bi.value : "a"); };
+  if (bt) bt.onclick = function() { loadThread(bi ? bi.value : BOARD, ti ? ti.value : ""); };
+  if (bb) bb.onclick = back;
+  if (bf) bf.onclick = applyFilters;
+  if (bcf) bcf.onclick = clearFilters;
+  if (bi) bi.onkeypress = function(e) {
+    e = e || window.event;
+    if (e.keyCode == 13) { loadCatalog(bi.value); return false; }
+  };
+  if (ti) ti.onkeypress = function(e) {
+    e = e || window.event;
+    if (e.keyCode == 13) { loadThread(bi ? bi.value : BOARD, ti.value); return false; }
+  };
+
+  initAutosuggest();
+  loadBoards();
+  initSettingsPanel();
+  initPaletteCombo();
+  initFontCombo();
+
+  setInterval(tick, 1000);
+  tick();
+  status("ready");
+}
+
+if (document.addEventListener) {
+  document.addEventListener("DOMContentLoaded", init, false);
+} else if (document.attachEvent) {
+  document.attachEvent("onreadystatechange", function() {
+    if (document.readyState == "complete") init();
+  });
+} else {
+  window.onload = init;
+}
+</script>
+</body>
+</html>
